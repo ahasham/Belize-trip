@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0C2233">
+<title>Belize 2026</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇧🇿</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0C2233;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:4px}
+input,select,textarea{font-family:inherit}
+@keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.f{animation:fu .35s ease-out both}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useEffect,useRef}=React;
+const LS={
+  get:async k=>{try{const v=localStorage.getItem(k);return v?{value:v}:null}catch{return null}},
+  set:async(k,v)=>{try{localStorage.setItem(k,v);return true}catch{return null}},
+};
+
+const FAMILIES=[
+  {name:"Hasham-Khanna",color:"#E8A838",code:"DAS",members:[
+    {name:"Diya",icon:"🌸"},{name:"Adam",icon:"😎"},{name:"Shaan",icon:"🐛"}
+  ]},
+  {name:"Patel-Khanna",color:"#3B9B8F",code:"GARK",members:[
+    {name:"Amini",icon:"🐆"},{name:"Gautam",icon:"🐉"},{name:"Reyan",icon:"🐨"},{name:"Kamrin",icon:"🦁"}
+  ]},
+  {name:"Pops",color:"#C06050",code:"CV",members:[
+    {name:"CV",icon:"🦜"}
+  ]},
+];
+
+const MEMBERS={Adam:"😎",Diya:"🌸",Shaan:"🐛",Gautam:"🐉",Amini:"🐆",Reyan:"🐨",Kamrin:"🦁",CV:"🦜"};
+
+const TG={
+  DAS:{label:"DAS",color:"#E8A838",icons:"🌸😎🐛"},
+  GARK:{label:"GARK",color:"#3B9B8F",icons:"🐆🐉🐨🦁"},
+  CV:{label:"CV",color:"#C06050",icons:"🦜"},
+};
+
+const LOCS={
+  "San Ignacio":{lat:17.1589,lon:-89.0697},
+  "Placencia":{lat:16.5167,lon:-88.3667},
+  "Caye Caulker":{lat:17.75,lon:-88.0167},
+  "Belize City":{lat:17.4985,lon:-88.1863},
+};
+const DLOC=[null,"San Ignacio","San Ignacio","San Ignacio","Placencia","Placencia","Placencia","Caye Caulker","Caye Caulker",null,null];
+
+const FLIGHTS=[
+  {code:"DL2851",label:"DAS SEA→DEN",day:0,url:"https://www.flightaware.com/live/flight/DAL2851"},
+  {code:"AS642",label:"GARK SEA→DEN",day:0,url:"https://www.flightaware.com/live/flight/ASA642"},
+  {code:"WS2562",label:"CV YYZ→BZE",day:1,url:"https://www.flightaware.com/live/flight/WJA2562"},
+  {code:"WN288",label:"ALL DEN→BZE",day:1,url:"https://www.flightaware.com/live/flight/SWA288"},
+  {code:"2M1067",label:"DAS+CV PLJ→BZE",day:7,url:"https://www.flightaware.com/live/flight/MYA1067"},
+  {code:"AA312",label:"GARK BZE→DFW→SEA",day:8,url:"https://www.flightaware.com/live/flight/AAL312"},
+  {code:"AS1335",label:"DAS BZE→LAX",day:9,url:"https://www.flightaware.com/live/flight/ASA1335"},
+  {code:"DL1802",label:"CV BZE→ATL",day:9,url:"https://www.flightaware.com/live/flight/DAL1802"},
+  {code:"AS84",label:"DAS LAX→SEA",day:10,url:"https://www.flightaware.com/live/flight/ASA84"},
+];
+
+const MAP_PTS=[
+  {id:"sea",name:"Seattle",lat:47.45,lon:-122.31,type:"transit"},
+  {id:"den",name:"Denver",lat:39.85,lon:-104.67,type:"transit"},
+  {id:"yyz",name:"Toronto",lat:43.68,lon:-79.63,type:"transit"},
+  {id:"bze",name:"BZE Airport",lat:17.54,lon:-88.31,type:"transit"},
+  {id:"si",name:"San Ignacio Resort",lat:17.159,lon:-89.07,type:"stay",info:"3 nights · 824-2034"},
+  {id:"mpr",name:"Pine Ridge",lat:16.88,lon:-88.85,type:"activity",info:"Rio On Pools, Big Rock Falls"},
+  {id:"xun",name:"Xunantunich",lat:17.09,lon:-89.14,type:"activity",info:"El Castillo — 2nd tallest"},
+  {id:"bh",name:"Blue Hole",lat:17.15,lon:-88.59,type:"activity",info:"Cenote swim $5"},
+  {id:"v99",name:"Villa 99",lat:16.646,lon:-88.318,type:"stay",info:"6BR beachfront · +501 630-2848"},
+  {id:"lbc",name:"Laughing Bird",lat:16.44,lon:-88.20,type:"activity",info:"UNESCO snorkel $650"},
+  {id:"mc",name:"Moho Caye",lat:16.51,lon:-88.07,type:"activity",info:"Turtles & sharks $650"},
+  {id:"cc",name:"Caye Caulker",lat:17.75,lon:-88.02,type:"stay",info:"Sea Dreams · The Split"},
+  {id:"sc",name:"Seaside Chateau",lat:17.53,lon:-88.30,type:"stay",info:"Near BZE airport"},
+  {id:"lax",name:"Los Angeles",lat:33.94,lon:-118.41,type:"transit"},
+];
+
+const DAY_RT=[
+  {segs:[["sea","den"]]},
+  {segs:[["den","bze"],["bze","si"]],cv:[["yyz","bze"],["bze","si"]]},
+  {segs:[["si","mpr"]]},
+  {segs:[["si","xun"]]},
+  {segs:[["si","bh"],["bh","v99"]]},
+  {segs:[["v99","lbc"]]},
+  {segs:[["v99","mc"]]},
+  {segs:[["v99","bze"],["bze","cc"]],gark:[["v99","sc"]]},
+  {segs:[["cc","sc"]],gark:[["sc","bze"]]},
+  {segs:[["sc","bze"],["bze","lax"]],cv:[["sc","bze"],["bze","yyz"]]},
+  {segs:[["lax","sea"]]},
+];
+
+const DAYS=[
+  {date:"Fri Apr 10",dn:1,title:"Seattle → Denver",loc:"Denver",icon:"✈️",color:"#4A6FA5",events:[
+    {time:"7:46 PM",desc:"DAS — DL 2851 SEA → DEN",group:"DAS",type:"flight",fl:"DL2851"},
+    {time:"8:11 PM",desc:"GARK — AS 642 SEA → DEN",group:"GARK",type:"flight",fl:"AS642"},
+    {time:"11:30 PM",desc:"Hampton Inn — free shuttle & breakfast",group:"ALL",type:"hotel"},
+  ]},
+  {date:"Sat Apr 11",dn:2,title:"→ Belize → San Ignacio",loc:"San Ignacio",icon:"🌎",color:"#2D7D46",events:[
+    {time:"10:15 AM",desc:"CV — WS 2562 YYZ → BZE (arrives 12:54pm)",group:"CV",type:"flight",fl:"WS2562"},
+    {time:"10:15 AM",desc:"DAS+GARK — WN 288 DEN → BZE (arrives 2:20pm). SW Booking: AONQQO",group:"ALL",type:"flight",fl:"WN288"},
+    {time:"3:00 PM",desc:"San Ignacio Shuttle — $35/pp ($280 total)",group:"ALL",type:"transport"},
+    {time:"4:00 PM",desc:"Check-in: San Ignacio Resort Hotel",group:"ALL",type:"hotel"},
+    {time:"7:00 PM",desc:"Dinner: Running W — reservation for 8",group:"ALL",type:"food"},
+    {time:"7:30 PM",desc:"Critters Night Walk — 90 min, $25/pp",group:"ALL",type:"activity"},
+  ]},
+  {date:"Sun Apr 12",dn:3,title:"Nature Day",loc:"Mountain Pine Ridge",icon:"🏊",color:"#1B8A5A",events:[
+    {time:"8:00 AM",desc:"Mountain Pine Ridge ⚠️ NEEDS BOOKING",group:"ALL",type:"activity"},
+    {time:"",desc:"Rio On Pools + Big Rock Falls + Rio Frio Cave",group:"ALL",type:"activity"},
+    {time:"PM",desc:"Green Iguana Project — $10/pp",group:"ALL",type:"activity"},
+    {time:"Evening",desc:"Dinner local restaurant",group:"ALL",type:"food"},
+  ]},
+  {date:"Mon Apr 13",dn:4,title:"Adventure Day",loc:"San Ignacio",icon:"🏛️",color:"#8B6914",events:[
+    {time:"8:00 AM",desc:"Xunantunich Mayan Ruins ✅ BOOKED",group:"ALL",type:"activity"},
+    {time:"PM",desc:"Barton Creek Cave canoe ✅ BOOKED",group:"ALL",type:"activity"},
+    {time:"Evening",desc:"Local dinner",group:"ALL",type:"food"},
+  ]},
+  {date:"Tue Apr 14",dn:5,title:"→ Placencia",loc:"Maya Beach",icon:"🚐",color:"#5B4A8A",events:[
+    {time:"Morning",desc:"Shuttle 3.5hrs via Hummingbird Hwy",group:"ALL",type:"transport"},
+    {time:"En route",desc:"Blue Hole cenote swim $5",group:"ALL",type:"activity"},
+    {time:"Noon",desc:"Golf cart — Captain Jak's",group:"ALL",type:"transport"},
+    {time:"4:00 PM",desc:"Check-in Villa 99 — 6BR beachfront",group:"ALL",type:"hotel"},
+    {time:"Evening",desc:"Maya Beach Bistro 🦞",group:"ALL",type:"food"},
+  ]},
+  {date:"Wed Apr 15",dn:6,title:"Laughing Bird Caye",loc:"Laughing Bird Caye",icon:"🤿",color:"#007BA7",events:[
+    {time:"9:00 AM",desc:"PRIVATE snorkel — Guide: Akeem. $650",group:"ALL",type:"activity"},
+    {time:"Noon",desc:"Grilled lobster & pineapple on the beach 🍍",group:"ALL",type:"food"},
+    {time:"Evening",desc:"Rumfish → Barefoot → Tutti Frutti 🍦",group:"ALL",type:"food"},
+  ]},
+  {date:"Thu Apr 16",dn:7,title:"Moho Caye",loc:"Moho Caye",icon:"🐢",color:"#006D5B",events:[
+    {time:"9:00 AM",desc:"PRIVATE snorkel — turtles & sharks! $650",group:"ALL",type:"activity"},
+    {time:"Evening",desc:"BBQ night at Villa 99 🔥",group:"ALL",type:"food"},
+  ]},
+  {date:"Fri Apr 17",dn:8,title:"Groups Split",loc:"Caye Caulker / BZE",icon:"🏝️",color:"#D35400",events:[
+    {time:"11:00 AM",desc:"Check-out Villa 99",group:"ALL",type:"hotel"},
+    {time:"11:00 AM",desc:"GARK → Belize City → Seaside Chateau",group:"GARK",type:"transport"},
+    {time:"11:00 AM",desc:"DAS+CV — Maya Air PLJ → BZE",group:"DAS",type:"flight",fl:"2M1067"},
+    {time:"12:00 PM",desc:"DAS+CV — Water taxi → Caye Caulker",group:"DAS",type:"transport"},
+    {time:"PM",desc:"DAS+CV — The Split + Sea Dreams 🏊",group:"DAS",type:"activity"},
+  ]},
+  {date:"Sat Apr 18",dn:9,title:"Caye Caulker / GARK Flies Home",loc:"Caye Caulker",icon:"🦈",color:"#2980B9",events:[
+    {time:"AM",desc:"DAS+CV — Hol Chan & Shark Ray Alley ~$50/pp",group:"DAS",type:"activity"},
+    {time:"1:39 PM",desc:"GARK — AA BZE → DFW → SEA 👋",group:"GARK",type:"flight",fl:"AA312"},
+    {time:"PM",desc:"DAS+CV — Water taxi → Seaside Chateau",group:"DAS",type:"transport"},
+  ]},
+  {date:"Sun Apr 19",dn:10,title:"→ LA / Toronto",loc:"LA / Toronto",icon:"🌅",color:"#C0392B",events:[
+    {time:"10:00 AM",desc:"DAS — AS 1335 BZE → LAX",group:"DAS",type:"flight",fl:"AS1335"},
+    {time:"~12:30 PM",desc:"CV — DL 1802 BZE → ATL → YYZ",group:"CV",type:"flight",fl:"DL1802"},
+    {time:"PM",desc:"DAS — Cambria Hotel Calabasas 🌄",group:"DAS",type:"hotel"},
+  ]},
+  {date:"Mon Apr 20",dn:11,title:"LA → Home",loc:"Home 🏠",icon:"🏠",color:"#7F8C8D",events:[
+    {time:"7:00 PM",desc:"DAS — AS 84 LAX → SEA",group:"DAS",type:"flight",fl:"AS84"},
+  ]},
+];
+
+const INIT_EXP=[
+  {id:1,item:"San Ignacio Resort",amount:3213,paidBy:"CV",cat:"Accommodation"},
+  {id:2,item:"Villa 99",amount:1965.27,paidBy:"DAS",cat:"Accommodation"},
+  {id:3,item:"Shuttle",amount:280,paidBy:"TBD",cat:"Transport"},
+  {id:4,item:"Laughing Bird Caye",amount:650,paidBy:"GARK",cat:"Activities"},
+  {id:5,item:"Moho Caye",amount:650,paidBy:"GARK",cat:"Activities"},
+  {id:6,item:"Golf Cart",amount:165,paidBy:"TBD",cat:"Transport"},
+  {id:7,item:"Pine Ridge tour",amount:1000,paidBy:"TBD",cat:"Activities"},
+  {id:8,item:"Xunantunich combo",amount:855,paidBy:"TBD",cat:"Activities"},
+  {id:9,item:"Night Walk",amount:225,paidBy:"TBD",cat:"Activities"},
+  {id:10,item:"Iguana Project",amount:90,paidBy:"TBD",cat:"Activities"},
+  {id:11,item:"Maya Air",amount:1064,paidBy:"DAS",cat:"Flights"},
+  {id:12,item:"Sea Dreams",amount:256.15,paidBy:"DAS",cat:"Accommodation"},
+  {id:13,item:"Seaside Chateau (DAS)",amount:143.67,paidBy:"DAS",cat:"Accommodation"},
+  {id:14,item:"Seaside Chateau (GARK)",amount:136.25,paidBy:"GARK",cat:"Accommodation"},
+];
+
+const KRIOL=[{k:"Gud maahnin!",e:"Good morning!"},{k:"Weh di go ahn?",e:"What's up?"},{k:"Aarite",e:"All right"},{k:"Cho!",e:"Wow!"},{k:"Mi love Bileez!",e:"I love Belize!"},{k:"Tek yuh time",e:"Take it easy"},{k:"Lesgo bash!",e:"Let's party!"},{k:"Lata!",e:"Later!"},{k:"Dat mi wikid!",e:"Awesome!"},{k:"You nuh eezih!",e:"Look at you!"}];
+
+const EMERG=[{l:"Police/Fire/Ambulance",n:"911"},{l:"Fire",n:"990"},{l:"NEMO",n:"936"},{l:"San Ignacio Police",n:"+501 824-2022"},{l:"Dangriga Hospital",n:"+501 522-3832"},{l:"Canadian Consulate",n:"+501 822-4011"},{l:"Canada Emergency",n:"+1 613-996-8885"},{l:"U.S. Embassy",n:"+501 822-4011"},{l:"Belize Healthcare",n:"+501 280-5000"}];
+
+const CONTACTS=[{name:"Villa 99 (Nina)",phone:"+501 630-2848",wa:true},{name:"Captain Jak's",phone:"+501 628-6447"},{name:"Akeem (snorkel)",phone:"+501 671-1257"},{name:"San Ignacio Resort",phone:"824-2034"}];
+
+const RESTS={
+  "San Ignacio":[{n:"Running W",d:"Steakhouse at hotel"}],
+  "Placencia":[{n:"Maya Beach Bistro",d:"Lobster grilled cheese 🦞"},{n:"Barefoot Beach Bar",d:"Casual beachfront"},{n:"Rumfish",d:"Drinks & seafood"},{n:"Tutti Frutti",d:"Gelato 🍦"},{n:"Wendy's Creole",d:"Fry jacks"},{n:"The Shak",d:"Wraps, curries"},{n:"Inky's",d:"Kid-friendly"}],
+  "Caye Caulker":[{n:"Sip N' Dip",d:"In-water seating"},{n:"Lazy Lizard",d:"The Split"}],
+};
+
+const TODOS=[
+  {text:"Book Pine Ridge (Apr 12)",urgent:true},
+  {text:"Xunantunich + Barton Creek",urgent:false,done:true},
+  {text:"Confirm Blue Hole stop",urgent:true},
+  {text:"Choose seats WN 288",urgent:false},
+  {text:"Submit APIS passport",urgent:false},
+  {text:"Notify Villa 99 arrival",urgent:false},
+];
+
+const TABS=["Today","Itinerary","Map","Expenses","Guide"];
+const TE={flight:"✈️",transport:"🚐",hotel:"🏨",food:"🍽️",activity:"⭐"};
+function getTD(){const d=new Date(),m=d.getMonth(),dd=d.getDate();if(m===3&&dd>=10&&dd<=20)return dd-10;return -1;}
+
+// Weather
+function Wx({loc}){
+  const[wx,setWx]=useState(null);
+  useEffect(()=>{if(!loc||!LOCS[loc])return;const{lat,lon}=LOCS[loc];
+    fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&current=temperature_2m,weathercode&timezone=America/Belize&forecast_days=3")
+    .then(r=>r.json()).then(d=>{if(d.daily)setWx(d)}).catch(()=>{});
+  },[loc]);
+  const ic=c=>c<=1?"☀️":c<=3?"⛅":c<=55?"🌧️":"⛈️";
+  if(!wx)return <div style={{fontSize:12,color:"#7A9B8E",padding:4}}>Loading weather...</div>;
+  return <div>
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+      <span style={{fontSize:20}}>{ic(wx.current?.weathercode)}</span>
+      <span style={{fontSize:20,fontWeight:700,color:"#E8A838"}}>{Math.round(wx.current?.temperature_2m)}°C</span>
+      <span style={{fontSize:10,color:"#7BBAA0",fontWeight:600}}>NOW</span>
+    </div>
+    <div style={{display:"flex",gap:6}}>
+      {wx.daily.time.slice(0,3).map((d,i)=><div key={d} style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"5px 8px",flex:1,textAlign:"center"}}>
+        <div style={{fontSize:8,color:"#7BBAA0",fontWeight:600}}>{["TODAY","TMRW","+2"][i]}</div>
+        <div style={{fontSize:13}}>{ic(wx.daily.weathercode[i])}</div>
+        <div style={{fontSize:12,fontWeight:700,color:"#E8A838"}}>{Math.round(wx.daily.temperature_2m_max[i])}°</div>
+        <div style={{fontSize:10,color:"#9BB8A8"}}>{Math.round(wx.daily.temperature_2m_min[i])}°</div>
+        <div style={{fontSize:8,color:"#56B4D3"}}>💧{wx.daily.precipitation_probability_max[i]}%</div>
+      </div>)}
+    </div>
+  </div>;
+}
+
+// Map
+function TripMap({tripDay}){
+  const[gps,setGps]=useState(null);
+  const[pin,setPin]=useState(null);
+  useEffect(()=>{if(!navigator.geolocation)return;
+    const w=navigator.geolocation.watchPosition(p=>setGps({lat:p.coords.latitude,lon:p.coords.longitude}),()=>{},{enableHighAccuracy:true,maximumAge:30000,timeout:10000});
+    return()=>navigator.geolocation.clearWatch(w);
+  },[]);
+  const inBZ=tripDay>=1&&tripDay<=9;
+  const b=inBZ?{mnLa:15.8,mxLa:18.6,mnLo:-89.5,mxLo:-87.3}:{mnLa:14,mxLa:50,mnLo:-126,mxLo:-75};
+  const proj=(lat,lon)=>({x:20+((lon-b.mnLo)/(b.mxLo-b.mnLo))*360,y:20+((b.mxLa-lat)/(b.mxLa-b.mnLa))*280});
+  const gP=id=>MAP_PTS.find(p=>p.id===id);
+  const rt=tripDay>=0&&tripDay<DAY_RT.length?DAY_RT[tripDay]:null;
+  const past=tripDay>=0?DAY_RT.slice(0,tripDay):[];
+
+  return <div>
+    <svg viewBox="0 0 400 320" style={{width:"100%",borderRadius:16,background:"linear-gradient(180deg,#0A2A3C,#0C3545)"}}>
+      {past.map((dr,di)=>dr.segs.map(([a,b],si)=>{const f=gP(a),t=gP(b);if(!f||!t)return null;const p1=proj(f.lat,f.lon),p2=proj(t.lat,t.lon);
+        return <line key={"p"+di+si} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="rgba(123,186,160,0.15)" strokeWidth={1.5} strokeDasharray="4,4"/>;
+      }))}
+      {rt&&rt.segs.map(([a,b],si)=>{const f=gP(a),t=gP(b);if(!f||!t)return null;const p1=proj(f.lat,f.lon),p2=proj(t.lat,t.lon);
+        return <line key={"a"+si} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="#E8A838" strokeWidth={2.5}><animate attributeName="stroke-opacity" values="1;.5;1" dur="2s" repeatCount="indefinite"/></line>;
+      })}
+      {rt&&rt.gark&&rt.gark.map(([a,b],si)=>{const f=gP(a),t=gP(b);if(!f||!t)return null;const p1=proj(f.lat,f.lon),p2=proj(t.lat,t.lon);
+        return <line key={"g"+si} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="#3B9B8F" strokeWidth={2} strokeDasharray="6,3"/>;
+      })}
+      {rt&&rt.cv&&rt.cv.map(([a,b],si)=>{const f=gP(a),t=gP(b);if(!f||!t)return null;const p1=proj(f.lat,f.lon),p2=proj(t.lat,t.lon);
+        return <line key={"c"+si} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="#C06050" strokeWidth={2} strokeDasharray="6,3"/>;
+      })}
+      {MAP_PTS.filter(p=>inBZ?p.lat>15&&p.lat<19:true).map(p=>{
+        const pos=proj(p.lat,p.lon);
+        const hot=rt&&(rt.segs.flat().includes(p.id)||rt.gark?.flat().includes(p.id)||rt.cv?.flat().includes(p.id));
+        const col=p.type==="stay"?"#E8A838":p.type==="activity"?"#7BBAA0":"#56B4D3";
+        return <g key={p.id} onClick={()=>setPin(pin===p.id?null:p.id)} style={{cursor:"pointer"}}>
+          <circle cx={pos.x} cy={pos.y} r={hot?7:5} fill={col} opacity={hot?1:.6} stroke={hot?"#fff":"none"} strokeWidth={hot?1.5:0}/>
+          {hot&&<circle cx={pos.x} cy={pos.y} r={10} fill="none" stroke={col} strokeWidth={1}><animate attributeName="r" values="7;14;7" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values=".8;0;.8" dur="2s" repeatCount="indefinite"/></circle>}
+          <text x={pos.x} y={pos.y-10} textAnchor="middle" fill="#E8E4DF" fontSize={inBZ?9:7} fontWeight={hot?700:400}>{p.name}</text>
+        </g>;
+      })}
+      {tripDay===7&&(()=>{const a=proj(17.75,-88.02),b=proj(17.53,-88.30);return<><text x={a.x+14} y={a.y+4} fill="#E8A838" fontSize={10}>🌸😎🐛🦜</text><text x={b.x+14} y={b.y+4} fill="#3B9B8F" fontSize={10}>🐆🐉🐨🦁</text></>})()}
+      {tripDay===8&&(()=>{const a=proj(17.75,-88.02),b=proj(17.54,-88.31);return<><text x={a.x+14} y={a.y+4} fill="#E8A838" fontSize={10}>🌸😎🐛🦜</text><text x={b.x+14} y={b.y-8} fill="#3B9B8F" fontSize={9}>🐆🐉✈️🏠</text></>})()}
+      {gps&&(()=>{const p=proj(gps.lat,gps.lon);return<g>
+        <circle cx={p.x} cy={p.y} r={6} fill="#FF6B6B" stroke="#fff" strokeWidth={2}/>
+        <circle cx={p.x} cy={p.y} r={12} fill="none" stroke="#FF6B6B" strokeWidth={1}><animate attributeName="r" values="6;18;6" dur="1.5s" repeatCount="indefinite"/><animate attributeName="opacity" values=".8;0;.8" dur="1.5s" repeatCount="indefinite"/></circle>
+        <text x={p.x} y={p.y-14} textAnchor="middle" fill="#FF6B6B" fontSize={9} fontWeight={700}>📍 You</text>
+      </g>})()}
+    </svg>
+    <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:6,flexWrap:"wrap"}}>
+      <span style={{fontSize:9,color:"#E8A838"}}>● Stay</span>
+      <span style={{fontSize:9,color:"#7BBAA0"}}>● Activity</span>
+      <span style={{fontSize:9,color:"#56B4D3"}}>● Transit</span>
+      {gps&&<span style={{fontSize:9,color:"#FF6B6B"}}>● You</span>}
+    </div>
+    {pin&&(()=>{const p=MAP_PTS.find(x=>x.id===pin);if(!p)return null;return<div style={{background:"rgba(0,0,0,.85)",borderRadius:12,padding:12,marginTop:8,border:"1px solid rgba(255,255,255,.1)"}}>
+      <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:14,fontWeight:700}}>{p.name}</span><button onClick={()=>setPin(null)} style={{background:"none",border:"none",color:"#7A9B8E",cursor:"pointer"}}>×</button></div>
+      {p.info&&<div style={{fontSize:12,color:"#9BB8A8",marginTop:4}}>{p.info}</div>}
+    </div>})()}
+  </div>;
+}
+
+// Main
+function App(){
+  const[tab,setTab]=useState(0),[sel,setSel]=useState(Math.max(0,getTD()));
+  const[exp,setExp]=useState(INIT_EXP),[showAdd,setShowAdd]=useState(false);
+  const[nE,setNE]=useState({item:"",amount:"",paidBy:"CV",cat:"Food & Drinks"});
+  const[done,setDone]=useState(new Set(TODOS.map((t,i)=>t.done?i:null).filter(x=>x!==null)));
+  const[filt,setFilt]=useState("ALL");
+  const[journal,setJournal]=useState([]),[jText,setJText]=useState(""),[jMood,setJMood]=useState("😊");
+
+  useEffect(()=>{(async()=>{
+    try{const r=await LS.get("bz5e");if(r)setExp(JSON.parse(r.value))}catch{}
+    try{const r=await LS.get("bz5t");if(r)setDone(new Set(JSON.parse(r.value)))}catch{}
+    try{const r=await LS.get("bz5j");if(r)setJournal(JSON.parse(r.value))}catch{}
+  })()},[]);
+  const sv=async(k,v)=>{try{await LS.set(k,JSON.stringify(v))}catch{}};
+  const sE=u=>{setExp(u);sv("bz5e",u)};const sT=u=>{setDone(u);sv("bz5t",[...u])};const sJ=u=>{setJournal(u);sv("bz5j",u)};
+
+  const settle=(()=>{const by={DAS:0,GARK:0,CV:0,TBD:0};exp.forEach(e=>{if(by[e.paidBy]!==undefined)by[e.paidBy]+=e.amount});return{total:exp.reduce((s,e)=>s+e.amount,0),by}})();
+  const td=getTD(),today=td>=0&&td<DAYS.length?DAYS[td]:null,tLoc=td>=0&&td<DLOC.length?DLOC[td]:null;
+  const cs={background:"rgba(255,255,255,.04)",borderRadius:16,padding:16,marginBottom:12,border:"1px solid rgba(255,255,255,.06)"};
+
+  const mIcons=g=>{if(g==="ALL")return<span style={{fontSize:11,marginLeft:4}}>{Object.values(MEMBERS).join("")}</span>;
+    const gr=TG[g];return gr?<span style={{fontSize:11,marginLeft:4,background:gr.color+"22",padding:"1px 6px",borderRadius:10}}>{gr.icons}</span>:null};
+  const flink=code=>{const f=FLIGHTS.find(x=>x.code===code);return f?<a href={f.url} target="_blank" rel="noopener noreferrer" style={{fontSize:10,background:"rgba(86,180,211,.15)",color:"#56B4D3",padding:"2px 8px",borderRadius:6,textDecoration:"none",fontWeight:700,marginLeft:4}}>Track ↗</a>:null};
+
+  const renderEv=(ev,i)=><div key={i} style={{display:"flex",gap:10,padding:"9px 12px",borderRadius:12,background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.06)",marginBottom:4}}>
+    <div style={{fontSize:15,width:22,textAlign:"center",flexShrink:0}}>{TE[ev.type]}</div>
+    <div style={{flex:1}}>
+      <div style={{fontSize:13,lineHeight:1.4}}>{ev.desc}{ev.fl&&flink(ev.fl)}</div>
+      <div style={{display:"flex",alignItems:"center",gap:4,marginTop:2,flexWrap:"wrap"}}>
+        {ev.time&&<span style={{fontSize:11,color:"#7BBAA0",fontWeight:600}}>{ev.time}</span>}
+        {mIcons(ev.group)}
+      </div>
+    </div>
+  </div>;
+
+  return <div style={{fontFamily:"'Instrument Sans','DM Sans',system-ui,sans-serif",background:"linear-gradient(160deg,#0C2233 0%,#0A3142 30%,#0E4A3C 70%,#183028 100%)",minHeight:"100vh",color:"#E8E4DF"}}>
+
+    {/* Header */}
+    <div style={{padding:"24px 20px 8px",textAlign:"center"}}>
+      <div style={{fontSize:10,letterSpacing:4,textTransform:"uppercase",color:"#7BBAA0",fontWeight:600}}>April 10 – 20, 2026</div>
+      <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:36,fontWeight:700,color:"#F4EDE4",letterSpacing:-1,lineHeight:1}}>Belize</h1>
+      <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:10,flexWrap:"wrap"}}>
+        {FAMILIES.map(f=><div key={f.code} style={{background:f.color+"18",border:"1px solid "+f.color+"44",borderRadius:12,padding:"6px 12px",textAlign:"center"}}>
+          <div style={{fontSize:16,letterSpacing:2}}>{f.members.map(m=>m.icon).join(" ")}</div>
+          <div style={{fontSize:9,color:f.color,fontWeight:600,marginTop:2}}>{f.members.map(m=>m.name).join(" · ")}</div>
+        </div>)}
+      </div>
+    </div>
+
+    {/* Tabs */}
+    <div style={{display:"flex",padding:"0 6px",marginTop:6,overflowX:"auto"}}>
+      {TABS.map((t,i)=><button key={t} onClick={()=>setTab(i)} style={{flex:"none",padding:"9px 12px",fontSize:12,fontWeight:tab===i?700:500,color:tab===i?"#F4EDE4":"#7A9B8E",background:tab===i?"rgba(255,255,255,.08)":"transparent",border:"none",borderBottom:tab===i?"2px solid #E8A838":"2px solid transparent",cursor:"pointer",borderRadius:"8px 8px 0 0"}}>{t}</button>)}
+    </div>
+
+    <div style={{padding:"12px 16px 80px"}}>
+
+    {/* TODAY */}
+    {tab===0&&<div className="f">{today?<>
+      <div style={{background:"linear-gradient(135deg,"+today.color+"30,"+today.color+"08)",borderRadius:16,padding:18,border:"1px solid "+today.color+"44",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div>
+            <div style={{fontSize:10,color:today.color,fontWeight:700,textTransform:"uppercase",letterSpacing:2}}>Day {today.dn} of 11</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,color:"#F4EDE4",marginTop:2}}>{today.title}</div>
+            <div style={{fontSize:12,color:"#9BB8A8",marginTop:2}}>📍 {today.loc}</div>
+          </div>
+          <div style={{fontSize:42}}>{today.icon}</div>
+        </div>
+        {tLoc&&<Wx loc={tLoc}/>}
+      </div>
+      {(()=>{const tf=FLIGHTS.filter(f=>f.day===td);return tf.length?<div style={{...cs,background:"rgba(86,180,211,.06)",borderColor:"rgba(86,180,211,.15)"}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#56B4D3",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>✈️ Today's Flights</div>
+        {tf.map(f=><a key={f.code} href={f.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",justifyContent:"space-between",padding:"8px 10px",background:"rgba(0,0,0,.2)",borderRadius:10,marginBottom:4,textDecoration:"none",color:"#E8E4DF"}}>
+          <div><div style={{fontSize:13,fontWeight:700}}>{f.code}</div><div style={{fontSize:11,color:"#9BB8A8"}}>{f.label}</div></div>
+          <div style={{fontSize:11,color:"#56B4D3",fontWeight:700}}>Track ↗</div>
+        </a>)}
+      </div>:null})()}
+      <div style={{fontSize:11,fontWeight:700,color:"#7BBAA0",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Schedule</div>
+      {today.events.map(renderEv)}
+      <div style={{...cs,marginTop:8,background:"rgba(232,168,56,.05)"}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#E8A838",marginBottom:4}}>🗣️ Kriol of the Day</div>
+        {(()=>{const p=KRIOL[td%KRIOL.length];return<><div style={{fontSize:18,fontWeight:700,fontStyle:"italic"}}>"{p.k}"</div><div style={{fontSize:13,color:"#9BB8A8"}}>{p.e}</div></>})()}
+      </div>
+    </>:<div style={{...cs,textAlign:"center",padding:32,background:"linear-gradient(135deg,rgba(232,168,56,.12),rgba(123,186,160,.08))"}}>
+      <div style={{fontSize:48,marginBottom:8}}>🇧🇿</div>
+      {(()=>{const diff=new Date(2026,3,10)-new Date();return diff>0?<><div style={{fontSize:13,color:"#7BBAA0",fontWeight:600}}>TRIP STARTS IN</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:56,fontWeight:700,color:"#E8A838"}}>{Math.ceil(diff/86400000)}</div><div style={{fontSize:14,color:"#9BB8A8"}}>days</div></>:<><div style={{fontFamily:"'Playfair Display',serif",fontSize:24}}>Trip Complete!</div></>})()}
+    </div>}</div>}
+
+    {/* ITINERARY */}
+    {tab===1&&<div className="f">
+      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:8,marginBottom:10}}>
+        {DAYS.map((d,i)=><button key={i} onClick={()=>setSel(i)} style={{flex:"none",padding:"7px 10px",borderRadius:12,background:sel===i?d.color:"rgba(255,255,255,.05)",border:i===td&&sel!==i?"1px solid "+d.color:"1px solid transparent",color:sel===i?"#fff":"#9BB8A8",cursor:"pointer",textAlign:"center",minWidth:52}}>
+          <div style={{fontSize:16}}>{d.icon}</div>
+          <div style={{fontSize:9,fontWeight:600,marginTop:1}}>{d.date.split(" ")[1]} {d.date.split(" ")[2]}</div>
+          {i===td&&<div style={{fontSize:7,color:sel===i?"#FFD":d.color,fontWeight:700}}>TODAY</div>}
+        </button>)}
+      </div>
+      {(()=>{const d=DAYS[sel],lk=sel<DLOC.length?DLOC[sel]:null;return<div key={sel}>
+        <div style={{background:"linear-gradient(135deg,"+d.color+"22,"+d.color+"08)",borderRadius:16,padding:14,border:"1px solid "+d.color+"33",marginBottom:10}}>
+          <div style={{fontSize:11,color:d.color,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>{d.date} · Day {d.dn}</div>
+          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:"#F4EDE4",marginTop:2}}>{d.title}</h2>
+          <div style={{fontSize:12,color:"#9BB8A8"}}>📍 {d.loc}</div>
+          {lk&&<div style={{marginTop:10}}><Wx loc={lk}/></div>}
+        </div>
+        <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
+          {["ALL","DAS","GARK","CV"].map(f=><button key={f} onClick={()=>setFilt(f)} style={{padding:"3px 10px",fontSize:11,borderRadius:8,background:filt===f?"rgba(255,255,255,.12)":"rgba(255,255,255,.04)",border:"none",color:filt===f?"#F4EDE4":"#7A9B8E",cursor:"pointer",fontWeight:filt===f?600:400}}>{f==="ALL"?"All":f}</button>)}
+        </div>
+        {d.events.filter(e=>filt==="ALL"||e.group==="ALL"||e.group===filt).map(renderEv)}
+      </div>})()}
+    </div>}
+
+    {/* MAP */}
+    {tab===2&&<div className="f">
+      <div style={cs}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:4}}>🗺️ Trip Route</h3>
+        <div style={{fontSize:11,color:"#9BB8A8",marginBottom:8}}>Tap pins for details · GPS shows your live position</div>
+        <TripMap tripDay={td>=0?td:0}/>
+      </div>
+    </div>}
+
+    {/* EXPENSES */}
+    {tab===3&&<div className="f">
+      <div style={{...cs,background:"linear-gradient(135deg,rgba(192,96,80,.12),rgba(123,186,160,.08))"}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#C06050",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>🦜 CV covers everything — for Gita</div>
+        <div style={{fontSize:28,fontWeight:700}}>${settle.total.toLocaleString("en",{maximumFractionDigits:0})}</div>
+        {(settle.by.DAS>0||settle.by.GARK>0)&&<div style={{marginTop:8,padding:"8px 10px",background:"rgba(0,0,0,.2)",borderRadius:10,fontSize:12}}>
+          <div style={{fontWeight:700,color:"#E8A838",marginBottom:4}}>💰 CV Reimbursements:</div>
+          {settle.by.DAS>0&&<div>CV → DAS: <strong>${settle.by.DAS.toFixed(2)}</strong></div>}
+          {settle.by.GARK>0&&<div>CV → GARK: <strong>${settle.by.GARK.toFixed(2)}</strong></div>}
+        </div>}
+        {settle.by.TBD>0&&<div style={{fontSize:11,color:"#E8A838",marginTop:6}}>⚠️ ${settle.by.TBD.toFixed(0)} needs payer assigned</div>}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+        <div style={{fontSize:13,fontWeight:700}}>All Expenses</div>
+        <button onClick={()=>setShowAdd(!showAdd)} style={{background:"#E8A838",color:"#0C2233",border:"none",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ Add</button>
+      </div>
+      {showAdd&&<div style={{...cs,background:"rgba(255,255,255,.06)"}}>
+        <input placeholder="What?" value={nE.item} onChange={e=>setNE({...nE,item:e.target.value})} style={{width:"100%",padding:10,borderRadius:8,border:"1px solid rgba(255,255,255,.15)",background:"rgba(0,0,0,.3)",color:"#E8E4DF",fontSize:13,marginBottom:6}}/>
+        <div style={{display:"flex",gap:6,marginBottom:6}}>
+          <input type="number" placeholder="$" value={nE.amount} onChange={e=>setNE({...nE,amount:e.target.value})} style={{flex:1,padding:10,borderRadius:8,border:"1px solid rgba(255,255,255,.15)",background:"rgba(0,0,0,.3)",color:"#E8E4DF",fontSize:13}}/>
+          <select value={nE.paidBy} onChange={e=>setNE({...nE,paidBy:e.target.value})} style={{flex:1,padding:10,borderRadius:8,border:"1px solid rgba(255,255,255,.15)",background:"rgba(0,0,0,.3)",color:"#E8E4DF",fontSize:13}}>
+            <option value="CV">CV</option><option value="DAS">DAS</option><option value="GARK">GARK</option>
+          </select>
+        </div>
+        <button onClick={()=>{if(!nE.item||!nE.amount)return;sE([...exp,{id:Date.now(),...nE,amount:parseFloat(nE.amount)}]);setNE({item:"",amount:"",paidBy:"CV",cat:"Food & Drinks"});setShowAdd(false)}} style={{width:"100%",padding:10,borderRadius:8,background:"#7BBAA0",color:"#0C2233",border:"none",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add</button>
+      </div>}
+      {["Accommodation","Flights","Activities","Transport","Food & Drinks","Other"].map(cat=>{
+        const items=exp.filter(e=>e.cat===cat);if(!items.length)return null;
+        return<div key={cat} style={{marginBottom:8}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#7BBAA0",textTransform:"uppercase",letterSpacing:1,padding:"6px 0 3px"}}>{cat}</div>
+          {items.map(e=><div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"rgba(255,255,255,.03)",borderRadius:10,marginBottom:2}}>
+            <div style={{flex:1,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.item}</div>
+            <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+              <span style={{fontSize:13,fontWeight:700}}>${e.amount.toLocaleString("en",{maximumFractionDigits:2})}</span>
+              <select value={e.paidBy} onChange={ev=>sE(exp.map(x=>x.id===e.id?{...x,paidBy:ev.target.value}:x))} style={{padding:"2px 4px",fontSize:10,borderRadius:6,border:"1px solid rgba(255,255,255,.15)",background:e.paidBy==="TBD"?"rgba(232,168,56,.2)":"rgba(0,0,0,.3)",color:e.paidBy==="TBD"?"#E8A838":"#E8E4DF",fontWeight:600}}>
+                <option value="CV">CV</option><option value="DAS">DAS</option><option value="GARK">GARK</option><option value="TBD">TBD</option>
+              </select>
+              <button onClick={()=>sE(exp.filter(x=>x.id!==e.id))} style={{background:"none",border:"none",color:"#7A9B8E",cursor:"pointer",fontSize:14}}>×</button>
+            </div>
+          </div>)}
+        </div>;
+      })}
+    </div>}
+
+    {/* GUIDE */}
+    {tab===4&&<div className="f">
+      <div style={{...cs,background:"linear-gradient(135deg,rgba(232,168,56,.08),rgba(123,186,160,.08))"}}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:8}}>☀️ Live Weather</h3>
+        {Object.keys(LOCS).map(k=><div key={k} style={{marginBottom:12}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#E8A838",marginBottom:4}}>📍 {k}</div><Wx loc={k}/>
+        </div>)}
+      </div>
+      <div style={cs}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:8}}>✈️ All Flights</h3>
+        {FLIGHTS.map(f=><a key={f.code} href={f.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",justifyContent:"space-between",padding:"8px 10px",background:"rgba(0,0,0,.15)",borderRadius:10,marginBottom:4,textDecoration:"none",color:"#E8E4DF"}}>
+          <div><span style={{fontWeight:700}}>{f.code}</span> <span style={{color:"#9BB8A8"}}>{f.label}</span></div>
+          <span style={{color:"#56B4D3",fontWeight:700}}>Track ↗</span>
+        </a>)}
+      </div>
+      <div style={cs}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:8}}>🧳 Essentials</h3>
+        {[["💵","Currency","2 BZD = 1 USD. Bring small bills."],["📱","Phone","Amini free. Adam/Diya: Verizon $12/day."],["📶","Villa WiFi","TM6 / angelbaby"],["🔒","Safety","Placencia & Caye Caulker very safe."]].map(([i,t,b])=>
+          <div key={t} style={{display:"flex",gap:10,padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+            <div style={{fontSize:16,width:24,textAlign:"center"}}>{i}</div>
+            <div><div style={{fontSize:13,fontWeight:700}}>{t}</div><div style={{fontSize:12,color:"#9BB8A8"}}>{b}</div></div>
+          </div>)}
+      </div>
+      <div style={{...cs,borderColor:"rgba(192,96,80,.2)"}}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:6}}>🚨 Emergency</h3>
+        {EMERG.map(e=><div key={e.l} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+          <span style={{fontSize:12}}>{e.l}</span>
+          <a href={"tel:"+e.n.replace(/\s/g,"")} style={{fontSize:13,fontWeight:700,color:"#7BBAA0",textDecoration:"none"}}>{e.n}</a>
+        </div>)}
+      </div>
+      <div style={cs}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:8}}>🍽️ Restaurants</h3>
+        {Object.entries(RESTS).map(([a,ps])=><div key={a} style={{marginBottom:8}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#E8A838",textTransform:"uppercase",marginBottom:3}}>{a}</div>
+          {ps.map(r=><div key={r.n} style={{padding:"3px 0 3px 10px",borderLeft:"2px solid rgba(232,168,56,.3)"}}><span style={{fontSize:13,fontWeight:600}}>{r.n}</span> <span style={{fontSize:11,color:"#9BB8A8"}}>— {r.d}</span></div>)}
+        </div>)}
+      </div>
+      <div style={{...cs,background:"rgba(232,168,56,.04)"}}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:6}}>🗣️ Kriol</h3>
+        {KRIOL.map((p,i)=><div key={i} style={{padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+          <span style={{fontWeight:700,color:"#E8A838",fontStyle:"italic"}}>{p.k}</span> <span style={{color:"#9BB8A8",marginLeft:6}}>{p.e}</span>
+        </div>)}
+      </div>
+      <div style={cs}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:8}}>✅ To-Dos</h3>
+        {TODOS.map((t,i)=><div key={i} onClick={()=>{const u=new Set(done);u.has(i)?u.delete(i):u.add(i);sT(u)}} style={{display:"flex",gap:10,padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,.04)",cursor:"pointer",opacity:done.has(i)?.35:1}}>
+          <div style={{width:18,height:18,borderRadius:5,flexShrink:0,border:done.has(i)?"none":"2px solid "+(t.urgent?"#E8A838":"#7A9B8E"),background:done.has(i)?"#7BBAA0":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#0C2233"}}>{done.has(i)?"✓":""}</div>
+          <div style={{fontSize:13,fontWeight:t.urgent?700:400,textDecoration:done.has(i)?"line-through":"none"}}>{t.urgent?"⚠️ ":""}{t.text}</div>
+        </div>)}
+      </div>
+      <div style={cs}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:8}}>📞 Contacts</h3>
+        {CONTACTS.map(c=><div key={c.name} style={{padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+          <div style={{fontSize:13,fontWeight:700}}>{c.name}</div>
+          {c.phone&&<a href={"tel:"+c.phone.replace(/\s/g,"")} style={{fontSize:11,color:"#7BBAA0",textDecoration:"none"}}>📱 {c.phone}</a>}
+          {c.wa&&<span style={{fontSize:10,background:"rgba(37,211,102,.15)",color:"#25D366",padding:"1px 6px",borderRadius:4,marginLeft:6}}>WhatsApp</span>}
+        </div>)}
+      </div>
+      <div style={{...cs,background:"rgba(232,168,56,.06)"}}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:6}}>📝 Journal</h3>
+        <div style={{display:"flex",gap:5,marginBottom:8}}>
+          {["😊","🤩","😴","🥰","😎","🌴","🤿","🍽️"].map(m=><button key={m} onClick={()=>setJMood(m)} style={{fontSize:18,background:jMood===m?"rgba(255,255,255,.12)":"transparent",border:jMood===m?"1px solid rgba(255,255,255,.2)":"1px solid transparent",borderRadius:8,padding:"3px 5px",cursor:"pointer"}}>{m}</button>)}
+        </div>
+        <textarea value={jText} onChange={e=>setJText(e.target.value)} placeholder="What happened today?" rows={3} style={{width:"100%",padding:10,borderRadius:10,border:"1px solid rgba(255,255,255,.15)",background:"rgba(0,0,0,.3)",color:"#E8E4DF",fontSize:13,resize:"vertical",fontFamily:"inherit",lineHeight:1.5}}/>
+        <button onClick={()=>{if(!jText.trim())return;const di=getTD();sJ([{id:Date.now(),text:jText.trim(),mood:jMood,day:di>=0&&di<DAYS.length?DAYS[di].date:"Off-trip",ts:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})},...journal]);setJText("")}} style={{width:"100%",padding:10,borderRadius:8,background:"#E8A838",color:"#0C2233",border:"none",fontSize:13,fontWeight:700,cursor:"pointer",marginTop:6}}>Save Entry</button>
+        {journal.map(e=><div key={e.id} style={{...cs,marginTop:8,marginBottom:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:20}}>{e.mood}</span><span style={{fontSize:12,fontWeight:700,color:"#E8A838"}}>{e.day}</span><span style={{fontSize:10,color:"#7A9B8E"}}>{e.ts}</span></div>
+            <button onClick={()=>sJ(journal.filter(j=>j.id!==e.id))} style={{background:"none",border:"none",color:"#7A9B8E",cursor:"pointer"}}>×</button>
+          </div>
+          <div style={{fontSize:13,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{e.text}</div>
+        </div>)}
+      </div>
+    </div>}
+
+    </div>
+  </div>;
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
