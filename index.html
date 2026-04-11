@@ -36,6 +36,34 @@ function getTD(){const d=new Date(),m=d.getMonth(),dd=d.getDate();if(m===3&&dd>=
 
 function speakKriol(text){if(!window.speechSynthesis)return;const u=new SpeechSynthesisUtterance(text);u.rate=0.85;u.pitch=1.1;window.speechSynthesis.speak(u);}
 
+// Offline indicator
+function OfflineBar(){
+  const[online,setOnline]=useState(navigator.onLine);
+  useEffect(()=>{const on=()=>setOnline(true),off=()=>setOnline(false);window.addEventListener("online",on);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off)};},[]);
+  if(online)return null;
+  return<div style={{background:"#C06050",color:"#fff",textAlign:"center",padding:"6px 12px",fontSize:12,fontWeight:700,position:"fixed",top:0,left:0,right:0,zIndex:9999}}>📡 You're offline — some features may not work</div>;
+}
+
+// OSRM route fetcher (for driving segments only)
+async function fetchDriveRoute(fromPt,toPt){
+  try{
+    const url="https://router.project-osrm.org/route/v1/driving/"+fromPt.lon+","+fromPt.lat+";"+toPt.lon+","+toPt.lat+"?overview=full&geometries=geojson";
+    const r=await fetch(url);const d=await r.json();
+    if(d.routes&&d.routes[0]&&d.routes[0].geometry)return d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+  }catch{}
+  return[[fromPt.lat,fromPt.lon],[toPt.lat,toPt.lon]]; // fallback straight line
+}
+
+// Flight arc (curved line between two points)
+function flightArc(from,to,n){
+  const pts=[];const midLat=(from.lat+to.lat)/2;const midLon=(from.lon+to.lon)/2;
+  const dx=to.lon-from.lon;const dy=to.lat-from.lat;const dist=Math.sqrt(dx*dx+dy*dy);
+  const bulge=Math.min(dist*0.15,5);
+  for(let i=0;i<=n;i++){const t=i/n;const lat=from.lat+t*(to.lat-from.lat)+bulge*Math.sin(Math.PI*t);
+    const lon=from.lon+t*(to.lon-from.lon);pts.push([lat,lon]);}
+  return pts;
+}
+
 // Weather
 function Wx({loc,compact}){
   const[wx,setWx]=useState(null);
@@ -103,13 +131,30 @@ function TripMap({tripDay}){
     past.forEach(dr=>{dr.segs.forEach(s=>{const f=gP(s.from),t=gP(s.to);if(!f||!t)return;
       const l=L.polyline([[f.lat,f.lon],[t.lat,t.lon]],{color:"rgba(123,186,160,.2)",weight:1.5,dashArray:"4,4"}).addTo(m);layRef.current.r.push(l);});});
 
+    // Draw routes with proper transport styling
+    const drawSeg=async(s,color,dash)=>{
+      const f=gP(s.from),t=gP(s.to);if(!f||!t)return;
+      bounds.push([f.lat,f.lon],[t.lat,t.lon]);
+      let pts;const tIcon=s.t==="fly"?"✈️":s.t==="boat"?"⛵":"🚐";
+      if(s.t==="drive"){pts=await fetchDriveRoute(f,t)}
+      else if(s.t==="fly"){pts=flightArc(f,t,30)}
+      else if(s.t==="boat"){pts=[[f.lat,f.lon],[t.lat,t.lon]]}
+      else{pts=[[f.lat,f.lon],[t.lat,t.lon]]}
+      const style=s.t==="fly"?{color,weight:2.5,dashArray:"8,4",opacity:.8}:s.t==="boat"?{color,weight:2.5,dashArray:"4,6",opacity:.8}:{color,weight:3.5,opacity:.9};
+      if(dash)Object.assign(style,{dashArray:dash,weight:2.5});
+      const l=L.polyline(pts,style).addTo(m);layRef.current.r.push(l);
+      // Transport icon at midpoint
+      if(pts.length>2){const mid=pts[Math.floor(pts.length/2)];
+        const ti=L.divIcon({className:"",html:'<div style="font-size:16px;text-shadow:0 1px 3px rgba(0,0,0,.6)">'+tIcon+'</div>',iconSize:[20,20],iconAnchor:[10,10]});
+        const mk=L.marker(mid,{icon:ti,interactive:false}).addTo(m);layRef.current.m.push(mk);}
+    };
     if(rt){
-      rt.segs.forEach(s=>{const f=gP(s.from),t=gP(s.to);if(!f||!t)return;bounds.push([f.lat,f.lon],[t.lat,t.lon]);
-        const l=L.polyline([[f.lat,f.lon],[t.lat,t.lon]],{color:"#E8A838",weight:3,opacity:.9}).addTo(m);layRef.current.r.push(l);});
-      if(rt.gark)rt.gark.forEach(s=>{const f=gP(s.from),t=gP(s.to);if(!f||!t)return;bounds.push([f.lat,f.lon],[t.lat,t.lon]);
-        const l=L.polyline([[f.lat,f.lon],[t.lat,t.lon]],{color:"#3B9B8F",weight:2.5,dashArray:"8,4"}).addTo(m);layRef.current.r.push(l);});
-      if(rt.cv)rt.cv.forEach(s=>{const f=gP(s.from),t=gP(s.to);if(!f||!t)return;bounds.push([f.lat,f.lon],[t.lat,t.lon]);
-        const l=L.polyline([[f.lat,f.lon],[t.lat,t.lon]],{color:"#C06050",weight:2.5,dashArray:"8,4"}).addTo(m);layRef.current.r.push(l);});
+      const drawAll=async()=>{
+        for(const s of rt.segs)await drawSeg(s,"#E8A838",null);
+        if(rt.gark)for(const s of rt.gark)await drawSeg(s,"#3B9B8F","8,4");
+        if(rt.cv)for(const s of rt.cv)await drawSeg(s,"#C06050","8,4");
+      };
+      drawAll();
     }
 
     const activeIds=rt?[...rt.segs.map(s=>[s.from,s.to]).flat(),...(rt.gark||[]).map(s=>[s.from,s.to]).flat(),...(rt.cv||[]).map(s=>[s.from,s.to]).flat()]:[];
@@ -179,7 +224,10 @@ function App(){
   // Accommodation card for a day
   const accomCard=(dayIdx)=>{
     let a=ACCOM[dayIdx];if(!a)return null;if(a.ref!==undefined)a=ACCOM[a.ref];if(!a)return null;
+    const photoIdx=a.ref!==undefined?a.ref:dayIdx;
+    const photo=typeof ACCOM_PHOTOS!=="undefined"&&ACCOM_PHOTOS[photoIdx]?ACCOM_PHOTOS[photoIdx]:null;
     return<div style={{background:"rgba(255,255,255,.03)",borderRadius:12,padding:10,marginBottom:8,border:"1px solid rgba(255,255,255,.05)"}}>
+      {photo&&<img src={photo} alt={a.name} style={{width:"100%",height:100,objectFit:"cover",borderRadius:8,marginBottom:8}} onError={e=>{e.target.style.display="none"}}/>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{fontSize:13,fontWeight:700}}>🏨 {a.name}</div>
         {a.link&&<a href={a.link} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#56B4D3",textDecoration:"none",fontWeight:600}}>View ↗</a>}
@@ -202,6 +250,7 @@ function App(){
   };
 
   return <div style={{background:"linear-gradient(160deg,#0C2233 0%,#0A3142 30%,#0E4A3C 70%,#183028 100%)",minHeight:"100vh",color:"#E8E4DF"}}>
+    <OfflineBar/>
     {/* Header */}
     <div style={{padding:"24px 20px 8px",textAlign:"center"}}>
       <div style={{fontSize:10,letterSpacing:4,textTransform:"uppercase",color:"#7BBAA0",fontWeight:600}}>April 10 – 20, 2026</div>
