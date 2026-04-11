@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0C2233">
+<title>Belize Family Trip 2026</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇧🇿</text></svg>">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0C2233;overflow-x:hidden}
+  ::-webkit-scrollbar{width:4px;height:4px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:4px}
+  @keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .f{animation:fu .35s ease-out both}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const {useState, useEffect} = React;
+
+// Storage shim for GitHub Pages (uses localStorage)
+const storage = {
+  get: async (k) => { try { const v = localStorage.getItem(k); return v ? {value:v} : null; } catch { return null; } },
+  set: async (k, v) => { try { localStorage.setItem(k, v); return {key:k,value:v}; } catch { return null; } },
+};
+
+const LOCATIONS = {
+  "San Ignacio": { lat: 17.1589, lon: -89.0697 },
+  "Placencia": { lat: 16.5167, lon: -88.3667 },
+  "Caye Caulker": { lat: 17.75, lon: -88.0167 },
+  "Belize City": { lat: 17.4985, lon: -88.1863 },
+};
+const DAY_LOC = [null,"San Ignacio","San Ignacio","San Ignacio","Placencia","Placencia","Placencia","Caye Caulker","Caye Caulker",null,null];
+
+const FLIGHTS = [
+  {code:"DL2851",label:"DAS SEA→DEN",day:0,url:"https://www.flightaware.com/live/flight/DAL2851"},
+  {code:"AS642",label:"GARK SEA→DEN",day:0,url:"https://www.flightaware.com/live/flight/ASA642"},
+  {code:"WN288",label:"ALL DEN→BZE",day:1,url:"https://www.flightaware.com/live/flight/SWA288"},
+  {code:"WS2562",label:"CV YYZ→BZE",day:1,url:"https://www.flightaware.com/live/flight/WJA2562"},
+  {code:"2M1067",label:"DAS+CV PLJ→BZE",day:7,url:"https://www.flightaware.com/live/flight/MYA1067"},
+  {code:"AA312",label:"GARK BZE→DFW→SEA",day:8,url:"https://www.flightaware.com/live/flight/AAL312"},
+  {code:"AS1335",label:"DAS BZE→LAX",day:9,url:"https://www.flightaware.com/live/flight/ASA1335"},
+  {code:"DL1802",label:"CV BZE→ATL",day:9,url:"https://www.flightaware.com/live/flight/DAL1802"},
+  {code:"AS84",label:"DAS LAX→SEA",day:10,url:"https://www.flightaware.com/live/flight/ASA84"},
+];
+
+const TG = {
+  DAS:{label:"Diya & Adam",color:"#E8A838",emoji:"🌴"},
+  GARK:{label:"Amini & Gaut",color:"#3B9B8F",emoji:"🐢"},
+  CV:{label:"CV (Pops)",color:"#C06050",emoji:"🦜"},
+};
+
+const DAYS=[
+  {date:"Fri Apr 10",dn:1,title:"Seattle → Denver",loc:"Denver",icon:"✈️",color:"#4A6FA5",events:[{time:"7:46 PM",desc:"DAS — DL 2851 SEA → DEN",group:"DAS",type:"flight",flight:"DL2851"},{time:"8:11 PM",desc:"GARK — AS 642 SEA → DEN",group:"GARK",type:"flight",flight:"AS642"},{time:"Late",desc:"Hampton Inn — free shuttle & breakfast",group:"ALL",type:"hotel"}]},
+  {date:"Sat Apr 11",dn:2,title:"Denver → Belize → San Ignacio",loc:"San Ignacio",icon:"🌎",color:"#2D7D46",events:[{time:"10:15 AM",desc:"DAS+GARK — WN 288 DEN → BZE. Conf: AONQQO",group:"ALL",type:"flight",flight:"WN288"},{time:"10:15 AM",desc:"CV — WS 2562 YYZ → BZE",group:"CV",type:"flight",flight:"WS2562"},{time:"3 PM",desc:"San Ignacio Shuttle $35/pp",group:"ALL",type:"transport"},{time:"4 PM",desc:"Check-in: San Ignacio Resort",group:"ALL",type:"hotel"},{time:"7 PM",desc:"Running W Restaurant",group:"ALL",type:"food"},{time:"7:30 PM",desc:"Night Walk — $25/pp",group:"ALL",type:"activity"}]},
+  {date:"Sun Apr 12",dn:3,title:"Nature Day",loc:"Mountain Pine Ridge",icon:"🏊",color:"#1B8A5A",events:[{time:"8 AM",desc:"Mountain Pine Ridge ⚠️ BOOK",group:"ALL",type:"activity"},{time:"",desc:"Rio On Pools + Big Rock Falls + Rio Frio Cave",group:"ALL",type:"activity"},{time:"Eve",desc:"Dinner local restaurant",group:"ALL",type:"food"}]},
+  {date:"Mon Apr 13",dn:4,title:"Adventure Day",loc:"San Ignacio",icon:"🏛️",color:"#8B6914",events:[{time:"8 AM",desc:"Xunantunich Ruins ⚠️ BOOK",group:"ALL",type:"activity"},{time:"PM",desc:"Barton Creek Cave canoe ~$95/pp",group:"ALL",type:"activity"},{time:"Eve",desc:"Local dinner",group:"ALL",type:"food"}]},
+  {date:"Tue Apr 14",dn:5,title:"→ Placencia",loc:"Maya Beach",icon:"🚐",color:"#5B4A8A",events:[{time:"AM",desc:"Shuttle 3.5hrs Hummingbird Hwy",group:"ALL",type:"transport"},{time:"",desc:"Blue Hole cenote stop $5",group:"ALL",type:"activity"},{time:"4 PM",desc:"Villa 99 check-in",group:"ALL",type:"hotel"},{time:"Eve",desc:"Maya Beach Bistro 🦞",group:"ALL",type:"food"}]},
+  {date:"Wed Apr 15",dn:6,title:"Laughing Bird Caye",loc:"Laughing Bird Caye",icon:"🤿",color:"#007BA7",events:[{time:"9 AM",desc:"PRIVATE snorkel $650 total",group:"ALL",type:"activity"},{time:"Noon",desc:"Grilled seafood on the beach",group:"ALL",type:"food"},{time:"Eve",desc:"Rumfish → Barefoot → Tutti Frutti",group:"ALL",type:"food"}]},
+  {date:"Thu Apr 16",dn:7,title:"Moho Caye",loc:"Moho Caye",icon:"🐢",color:"#006D5B",events:[{time:"9 AM",desc:"PRIVATE snorkel — turtles & sharks! $650",group:"ALL",type:"activity"},{time:"Eve",desc:"BBQ night at Villa 99 🔥",group:"ALL",type:"food"}]},
+  {date:"Fri Apr 17",dn:8,title:"Groups Split",loc:"Caye Caulker / BZE",icon:"🏝️",color:"#D35400",events:[{time:"11 AM",desc:"Villa 99 checkout",group:"ALL",type:"hotel"},{time:"11 AM",desc:"DAS+CV Maya Air PLJ→BZE",group:"DAS",type:"flight",flight:"2M1067"},{time:"PM",desc:"DAS+CV Caye Caulker — The Split 🏊",group:"DAS",type:"activity"},{time:"",desc:"GARK → Seaside Chateau",group:"GARK",type:"transport"}]},
+  {date:"Sat Apr 18",dn:9,title:"Caye Caulker / GARK Departs",loc:"Caye Caulker",icon:"🦈",color:"#2980B9",events:[{time:"AM",desc:"DAS+CV Hol Chan snorkel ~$50/pp",group:"DAS",type:"activity"},{time:"1:39 PM",desc:"GARK AA BZE→DFW→SEA 👋",group:"GARK",type:"flight",flight:"AA312"}]},
+  {date:"Sun Apr 19",dn:10,title:"→ LA / Toronto",loc:"LA / Toronto",icon:"🌅",color:"#C0392B",events:[{time:"10 AM",desc:"DAS AS 1335 BZE→LAX",group:"DAS",type:"flight",flight:"AS1335"},{time:"~12:30",desc:"CV DL 1802 BZE→ATL→YYZ",group:"CV",type:"flight",flight:"DL1802"}]},
+  {date:"Mon Apr 20",dn:11,title:"LA → Home",loc:"Home 🏠",icon:"🏠",color:"#7F8C8D",events:[{time:"7 PM",desc:"DAS AS 84 LAX→SEA ✈️🏠",group:"DAS",type:"flight",flight:"AS84"}]},
+];
+
+const INIT_EXP=[
+  {id:1,item:"San Ignacio Resort",amount:3213,paidBy:"CV",category:"Accommodation"},
+  {id:2,item:"Villa 99",amount:1965.27,paidBy:"DAS",category:"Accommodation"},
+  {id:3,item:"Shuttle",amount:280,paidBy:"TBD",category:"Transport"},
+  {id:4,item:"Laughing Bird Caye",amount:650,paidBy:"GARK",category:"Activities"},
+  {id:5,item:"Moho Caye",amount:650,paidBy:"GARK",category:"Activities"},
+  {id:6,item:"Golf Cart",amount:165,paidBy:"TBD",category:"Transport"},
+  {id:7,item:"Pine Ridge tour",amount:1000,paidBy:"TBD",category:"Activities"},
+  {id:8,item:"Xunantunich combo",amount:855,paidBy:"TBD",category:"Activities"},
+  {id:9,item:"Night Walk",amount:225,paidBy:"TBD",category:"Activities"},
+  {id:10,item:"Iguana Project",amount:90,paidBy:"TBD",category:"Activities"},
+  {id:11,item:"Maya Air",amount:1064,paidBy:"DAS",category:"Flights"},
+  {id:12,item:"Sea Dreams",amount:256.15,paidBy:"DAS",category:"Accommodation"},
+  {id:13,item:"Seaside Chateau (DAS)",amount:143.67,paidBy:"DAS",category:"Accommodation"},
+  {id:14,item:"Seaside Chateau (GARK)",amount:136.25,paidBy:"GARK",category:"Accommodation"},
+];
+
+const KRIOL=[{k:"Gud maahnin!",e:"Good morning!"},{k:"Weh di go ahn?",e:"What's up?"},{k:"Aarite",e:"All right"},{k:"Cho!",e:"Wow!"},{k:"Mi love Bileez!",e:"I love Belize!"},{k:"Tek yuh time",e:"Take it easy"},{k:"Lesgo bash!",e:"Let's party!"},{k:"Lata!",e:"Later!"},{k:"Dat mi wikid!",e:"That was awesome!"},{k:"You nuh eezih!",e:"Look at you!"}];
+
+const EMERGENCY=[{l:"Police/Fire/Ambulance",n:"911"},{l:"Fire",n:"990"},{l:"NEMO",n:"936"},{l:"San Ignacio Police",n:"+501 824-2022"},{l:"Dangriga Hospital",n:"+501 522-3832"},{l:"Canadian Consulate 24/7",n:"+501 822-4011"},{l:"Canada Emergency",n:"+1 613-996-8885"},{l:"U.S. Embassy",n:"+501 822-4011"},{l:"Belize Healthcare",n:"+501 280-5000"}];
+
+const CONTACTS=[{name:"Villa 99 (Nina)",phone:"+501 630-2848",wa:true},{name:"Captain Jak's",phone:"+501 628-6447"},{name:"Akeem (snorkel)",phone:"+501 671-1257"},{name:"San Ignacio Resort",phone:"824-2034"}];
+
+const TABS=["Today","Itinerary","Expenses","Info","Journal"];
+const TE={flight:"✈️",transport:"🚐",hotel:"🏨",food:"🍽️",activity:"⭐"};
+
+function getTD(){const d=new Date(),m=d.getMonth(),dd=d.getDate();if(m===3&&dd>=10&&dd<=20)return dd-10;return -1;}
+
+function Wx({loc}){
+  const[wx,setWx]=useState(null);
+  useEffect(()=>{if(!loc||!LOCATIONS[loc])return;const{lat,lon}=LOCATIONS[loc];
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&current=temperature_2m,weathercode&timezone=America/Belize&forecast_days=3`)
+    .then(r=>r.json()).then(d=>{if(d.daily)setWx(d)}).catch(()=>{});
+  },[loc]);
+  const ic=c=>{if(c<=1)return"☀️";if(c<=3)return"⛅";if(c<=55)return"🌧️";return"⛈️"};
+  if(!wx)return <div style={{fontSize:12,color:"#7A9B8E"}}>Loading weather...</div>;
+  const t=wx.daily;
+  return <div>
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+      <span style={{fontSize:22}}>{ic(wx.current?.weathercode)}</span>
+      <span style={{fontSize:22,fontWeight:700,color:"#E8A838"}}>{Math.round(wx.current?.temperature_2m)}°C</span>
+      <span style={{fontSize:11,color:"#7BBAA0",fontWeight:600}}>NOW</span>
+      <span style={{fontSize:9,color:"#7A9B8E",marginLeft:"auto"}}>Open-Meteo</span>
+    </div>
+    <div style={{display:"flex",gap:6}}>
+      {t.time.slice(0,3).map((d,i)=><div key={d} style={{background:"rgba(0,0,0,0.2)",borderRadius:10,padding:"6px 10px",flex:1,textAlign:"center"}}>
+        <div style={{fontSize:9,color:"#7BBAA0",fontWeight:600}}>{["TODAY","TMRW","+2"][i]}</div>
+        <div style={{fontSize:14}}>{ic(t.weathercode[i])}</div>
+        <div style={{fontSize:13,fontWeight:700,color:"#E8A838"}}>{Math.round(t.temperature_2m_max[i])}°</div>
+        <div style={{fontSize:11,color:"#9BB8A8"}}>{Math.round(t.temperature_2m_min[i])}°</div>
+        <div style={{fontSize:9,color:"#56B4D3"}}>💧{t.precipitation_probability_max[i]}%</div>
+      </div>)}
+    </div>
+  </div>;
+}
+
+function App(){
+  const[tab,setTab]=useState(0),[sel,setSel]=useState(Math.max(0,getTD())),[exp,setExp]=useState(INIT_EXP);
+  const[showAdd,setShowAdd]=useState(false),[nE,setNE]=useState({item:"",amount:"",paidBy:"CV",category:"Food & Drinks"});
+  const[done,setDone]=useState(new Set()),[filt,setFilt]=useState("ALL");
+  const[journal,setJournal]=useState([]),[jText,setJText]=useState(""),[jMood,setJMood]=useState("😊");
+
+  useEffect(()=>{(async()=>{
+    try{const r=await storage.get("bz-e");if(r)setExp(JSON.parse(r.value))}catch{}
+    try{const r=await storage.get("bz-t");if(r)setDone(new Set(JSON.parse(r.value)))}catch{}
+    try{const r=await storage.get("bz-j");if(r)setJournal(JSON.parse(r.value))}catch{}
+  })()},[]);
+
+  const sv=async(k,v)=>{try{await storage.set(k,JSON.stringify(v))}catch{}};
+  const sE=u=>{setExp(u);sv("bz-e",u)};const sT=u=>{setDone(u);sv("bz-t",[...u])};const sJ=u=>{setJournal(u);sv("bz-j",u)};
+
+  const addExp=()=>{if(!nE.item||!nE.amount)return;sE([...exp,{id:Date.now(),...nE,amount:parseFloat(nE.amount)}]);setNE({item:"",amount:"",paidBy:"CV",category:"Food & Drinks"});setShowAdd(false)};
+  const addJ=()=>{if(!jText.trim())return;const di=getTD();const dl=di>=0&&di<DAYS.length?DAYS[di].date:"Off-trip";sJ([{id:Date.now(),text:jText.trim(),mood:jMood,day:dl,ts:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})},...journal]);setJText("")};
+
+  const settle=(()=>{const by={DAS:0,GARK:0,CV:0,TBD:0};exp.forEach(e=>{if(by[e.paidBy]!==undefined)by[e.paidBy]+=e.amount});return{total:exp.reduce((s,e)=>s+e.amount,0),by}})();
+  const td=getTD(),today=td>=0&&td<DAYS.length?DAYS[td]:null,todayLoc=td>=0&&td<DAY_LOC.length?DAY_LOC[td]:null;
+  const cs={background:"rgba(255,255,255,0.04)",borderRadius:16,padding:16,marginBottom:12,border:"1px solid rgba(255,255,255,0.06)"};
+  const badge=g=>{if(g==="ALL")return null;const gr=TG[g];return gr?React.createElement("span",{style:{background:gr.color+"33",color:gr.color,padding:"2px 7px",borderRadius:12,fontSize:10,fontWeight:700,marginLeft:4}},gr.emoji+" "+gr.label):null};
+  const flink=code=>{const f=FLIGHTS.find(x=>x.code===code);return f?React.createElement("a",{href:f.url,target:"_blank",rel:"noopener noreferrer",style:{fontSize:10,background:"rgba(86,180,211,0.15)",color:"#56B4D3",padding:"2px 8px",borderRadius:6,textDecoration:"none",fontWeight:700,marginLeft:4}},"Track ↗"):null};
+
+  const renderEv=(ev,i)=>React.createElement("div",{key:i,style:{display:"flex",gap:10,padding:"9px 12px",borderRadius:12,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.06)",marginBottom:4}},
+    React.createElement("div",{style:{fontSize:15,width:22,textAlign:"center",flexShrink:0}},TE[ev.type]),
+    React.createElement("div",{style:{flex:1}},
+      React.createElement("div",{style:{fontSize:13,lineHeight:1.4}},ev.desc,ev.flight&&flink(ev.flight)),
+      React.createElement("div",{style:{display:"flex",alignItems:"center",gap:4,marginTop:2}},
+        ev.time&&React.createElement("span",{style:{fontSize:11,color:"#7BBAA0",fontWeight:600}},ev.time),
+        badge(ev.group)
+      )
+    )
+  );
+
+  return React.createElement("div",{style:{fontFamily:"'Instrument Sans',system-ui,sans-serif",background:"linear-gradient(160deg,#0C2233 0%,#0A3142 30%,#0E4A3C 70%,#183028 100%)",minHeight:"100vh",color:"#E8E4DF"}},
+    React.createElement("link",{rel:"stylesheet",href:"https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap"}),
+
+    // Header
+    React.createElement("div",{style:{padding:"24px 20px 6px",textAlign:"center"}},
+      React.createElement("div",{style:{fontSize:10,letterSpacing:4,textTransform:"uppercase",color:"#7BBAA0",fontWeight:600}},"April 10 – 20, 2026"),
+      React.createElement("h1",{style:{fontFamily:"'Playfair Display',serif",fontSize:36,fontWeight:700,color:"#F4EDE4",letterSpacing:-1,lineHeight:1}},"Belize"),
+      React.createElement("div",{style:{fontSize:12,color:"#9BB8A8",marginTop:3}},Object.values(TG).map(v=>v.emoji+" "+v.label).join("  ·  "))
+    ),
+
+    // Tabs
+    React.createElement("div",{style:{display:"flex",padding:"0 8px",marginTop:8,overflowX:"auto"}},
+      TABS.map((t,i)=>React.createElement("button",{key:t,onClick:()=>setTab(i),style:{flex:"none",padding:"9px 14px",fontSize:12,fontWeight:tab===i?700:500,color:tab===i?"#F4EDE4":"#7A9B8E",background:tab===i?"rgba(255,255,255,0.08)":"transparent",border:"none",borderBottom:tab===i?"2px solid #E8A838":"2px solid transparent",cursor:"pointer",borderRadius:"8px 8px 0 0"}},t))
+    ),
+
+    React.createElement("div",{style:{padding:"12px 16px 80px"}},
+
+      // TODAY
+      tab===0&&React.createElement("div",{className:"f"},
+        today?React.createElement(React.Fragment,null,
+          React.createElement("div",{style:{background:`linear-gradient(135deg,${today.color}30,${today.color}08)`,borderRadius:16,padding:18,border:`1px solid ${today.color}44`,marginBottom:12}},
+            React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
+              React.createElement("div",null,
+                React.createElement("div",{style:{fontSize:10,color:today.color,fontWeight:700,textTransform:"uppercase",letterSpacing:2}},"Day "+today.dn+" of 11"),
+                React.createElement("div",{style:{fontFamily:"'Playfair Display',serif",fontSize:24,color:"#F4EDE4",marginTop:2}},today.title),
+                React.createElement("div",{style:{fontSize:12,color:"#9BB8A8",marginTop:2}},"📍 "+today.loc)
+              ),
+              React.createElement("div",{style:{fontSize:42}},today.icon)
+            ),
+            todayLoc&&React.createElement(Wx,{loc:todayLoc})
+          ),
+          React.createElement("div",{style:{fontSize:11,fontWeight:700,color:"#7BBAA0",textTransform:"uppercase",letterSpacing:1,marginBottom:6}},"Schedule"),
+          today.events.map(renderEv),
+          React.createElement("div",{style:{...cs,marginTop:8,background:"rgba(232,168,56,0.05)"}},
+            React.createElement("div",{style:{fontSize:10,fontWeight:700,color:"#E8A838",marginBottom:4}},"🗣️ Kriol"),
+            (()=>{const p=KRIOL[td%KRIOL.length];return React.createElement(React.Fragment,null,React.createElement("div",{style:{fontSize:18,fontWeight:700,fontStyle:"italic"}},'"'+p.k+'"'),React.createElement("div",{style:{fontSize:13,color:"#9BB8A8"}},p.e))})()
+          )
+        ):React.createElement("div",{style:{...cs,textAlign:"center",padding:32}},
+          React.createElement("div",{style:{fontSize:48}},"🇧🇿"),
+          React.createElement("div",{style:{fontFamily:"'Playfair Display',serif",fontSize:24,marginTop:8}},"Belize Family Trip"),
+          React.createElement("div",{style:{fontSize:13,color:"#9BB8A8",marginTop:4}},"Browse the tabs to explore")
+        )
+      ),
+
+      // ITINERARY
+      tab===1&&React.createElement("div",{className:"f"},
+        React.createElement("div",{style:{display:"flex",gap:5,overflowX:"auto",paddingBottom:8,marginBottom:10}},
+          DAYS.map((d,i)=>React.createElement("button",{key:i,onClick:()=>setSel(i),style:{flex:"none",padding:"7px 10px",borderRadius:12,background:sel===i?d.color:"rgba(255,255,255,0.05)",border:"1px solid transparent",color:sel===i?"#fff":"#9BB8A8",cursor:"pointer",textAlign:"center",minWidth:52}},
+            React.createElement("div",{style:{fontSize:16}},d.icon),
+            React.createElement("div",{style:{fontSize:9,fontWeight:600,marginTop:1}},d.date.split(" ")[1]+" "+d.date.split(" ")[2])
+          ))
+        ),
+        (()=>{const d=DAYS[sel],lk=sel<DAY_LOC.length?DAY_LOC[sel]:null;return React.createElement("div",{key:sel},
+          React.createElement("div",{style:{background:`linear-gradient(135deg,${d.color}22,${d.color}08)`,borderRadius:16,padding:14,border:`1px solid ${d.color}33`,marginBottom:10}},
+            React.createElement("div",{style:{fontSize:11,color:d.color,fontWeight:700,textTransform:"uppercase",letterSpacing:1}},d.date+" · Day "+d.dn),
+            React.createElement("h2",{style:{fontFamily:"'Playfair Display',serif",fontSize:22,color:"#F4EDE4",marginTop:2}},d.title),
+            React.createElement("div",{style:{fontSize:12,color:"#9BB8A8"}},"📍 "+d.loc),
+            lk&&React.createElement("div",{style:{marginTop:10}},React.createElement(Wx,{loc:lk}))
+          ),
+          d.events.filter(e=>filt==="ALL"||e.group==="ALL"||e.group===filt).map(renderEv)
+        )})()
+      ),
+
+      // EXPENSES
+      tab===2&&React.createElement("div",{className:"f"},
+        React.createElement("div",{style:{...cs,background:"linear-gradient(135deg,rgba(192,96,80,0.12),rgba(123,186,160,0.08))"}},
+          React.createElement("div",{style:{fontSize:10,fontWeight:700,color:"#C06050",textTransform:"uppercase",letterSpacing:1,marginBottom:4}},"🦜 CV covers everything — for Gita"),
+          React.createElement("div",{style:{fontSize:28,fontWeight:700}},"$"+settle.total.toLocaleString("en",{maximumFractionDigits:0})),
+          (settle.by.DAS>0||settle.by.GARK>0)&&React.createElement("div",{style:{marginTop:8,padding:"8px 10px",background:"rgba(0,0,0,0.2)",borderRadius:10,fontSize:12}},
+            React.createElement("div",{style:{fontWeight:700,color:"#E8A838",marginBottom:4}},"💰 CV Reimbursements:"),
+            settle.by.DAS>0&&React.createElement("div",null,"CV → DAS: $"+settle.by.DAS.toFixed(2)),
+            settle.by.GARK>0&&React.createElement("div",null,"CV → GARK: $"+settle.by.GARK.toFixed(2))
+          )
+        ),
+        exp.map(e=>React.createElement("div",{key:e.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"rgba(255,255,255,0.03)",borderRadius:10,marginBottom:2}},
+          React.createElement("div",{style:{flex:1,fontSize:12,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},e.item),
+          React.createElement("div",{style:{display:"flex",alignItems:"center",gap:5,flexShrink:0}},
+            React.createElement("span",{style:{fontSize:13,fontWeight:700}},"$"+e.amount.toLocaleString("en",{maximumFractionDigits:2})),
+            React.createElement("span",{style:{fontSize:10,color:e.paidBy==="TBD"?"#E8A838":"#7BBAA0",fontWeight:600,padding:"2px 6px",background:"rgba(0,0,0,0.2)",borderRadius:6}},e.paidBy)
+          )
+        ))
+      ),
+
+      // INFO
+      tab===3&&React.createElement("div",{className:"f"},
+        React.createElement("div",{style:{...cs,background:"linear-gradient(135deg,rgba(232,168,56,0.08),rgba(123,186,160,0.08))"}},
+          React.createElement("h3",{style:{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:8}},"☀️ Live Weather"),
+          Object.keys(LOCATIONS).map(k=>React.createElement("div",{key:k,style:{marginBottom:12}},React.createElement("div",{style:{fontSize:12,fontWeight:700,color:"#E8A838",marginBottom:4}},"📍 "+k),React.createElement(Wx,{loc:k})))
+        ),
+        React.createElement("div",{style:cs},
+          React.createElement("h3",{style:{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:8}},"✈️ Flight Tracking"),
+          FLIGHTS.map(f=>React.createElement("a",{key:f.code,href:f.url,target:"_blank",rel:"noopener noreferrer",style:{display:"flex",justifyContent:"space-between",padding:"8px 10px",background:"rgba(0,0,0,0.15)",borderRadius:10,marginBottom:4,textDecoration:"none",color:"#E8E4DF"}},
+            React.createElement("div",null,React.createElement("span",{style:{fontWeight:700}},f.code)," ",React.createElement("span",{style:{color:"#9BB8A8"}},f.label)),
+            React.createElement("span",{style:{color:"#56B4D3",fontWeight:700}},"Track ↗")
+          ))
+        ),
+        React.createElement("div",{style:{...cs,borderColor:"rgba(192,96,80,0.2)"}},
+          React.createElement("h3",{style:{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:6}},"🚨 Emergency"),
+          EMERGENCY.map(e=>React.createElement("div",{key:e.l,style:{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}},
+            React.createElement("span",{style:{fontSize:12}},e.l),
+            React.createElement("a",{href:"tel:"+e.n.replace(/\s/g,""),style:{fontSize:13,fontWeight:700,color:"#7BBAA0",textDecoration:"none"}},e.n)
+          ))
+        ),
+        React.createElement("div",{style:{...cs,background:"rgba(232,168,56,0.04)"}},
+          React.createElement("h3",{style:{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:6}},"🗣️ Kriol"),
+          KRIOL.map((p,i)=>React.createElement("div",{key:i,style:{padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}},
+            React.createElement("span",{style:{fontWeight:700,color:"#E8A838",fontStyle:"italic"}},p.k)," ",React.createElement("span",{style:{color:"#9BB8A8"}},p.e)
+          ))
+        ),
+        React.createElement("div",{style:cs},
+          React.createElement("h3",{style:{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:8}},"📞 Contacts"),
+          CONTACTS.map(c=>React.createElement("div",{key:c.name,style:{padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}},
+            React.createElement("div",{style:{fontSize:13,fontWeight:700}},c.name),
+            c.phone&&React.createElement("a",{href:"tel:"+c.phone.replace(/\s/g,""),style:{fontSize:11,color:"#7BBAA0",textDecoration:"none"}},"📱 "+c.phone)
+          ))
+        )
+      ),
+
+      // JOURNAL
+      tab===4&&React.createElement("div",{className:"f"},
+        React.createElement("div",{style:{...cs,background:"rgba(232,168,56,0.06)"}},
+          React.createElement("h3",{style:{fontFamily:"'Playfair Display',serif",fontSize:18,marginBottom:6}},"📝 Journal"),
+          React.createElement("div",{style:{display:"flex",gap:5,marginBottom:8}},
+            ["😊","🤩","😴","🥰","😎","🌴","🤿"].map(m=>React.createElement("button",{key:m,onClick:()=>setJMood(m),style:{fontSize:18,background:jMood===m?"rgba(255,255,255,0.12)":"transparent",border:jMood===m?"1px solid rgba(255,255,255,0.2)":"1px solid transparent",borderRadius:8,padding:"3px 5px",cursor:"pointer"}},m))
+          ),
+          React.createElement("textarea",{value:jText,onChange:e=>setJText(e.target.value),placeholder:"What happened today?",rows:3,style:{width:"100%",padding:10,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(0,0,0,0.3)",color:"#E8E4DF",fontSize:13,resize:"vertical",fontFamily:"inherit",lineHeight:1.5}}),
+          React.createElement("button",{onClick:addJ,style:{width:"100%",padding:10,borderRadius:8,background:"#E8A838",color:"#0C2233",border:"none",fontSize:13,fontWeight:700,cursor:"pointer",marginTop:6}},"Save Entry")
+        ),
+        journal.length===0?React.createElement("div",{style:{textAlign:"center",padding:32,color:"#7A9B8E"}},React.createElement("div",{style:{fontSize:32,marginBottom:8}},"✨"),"No entries yet"):
+        journal.map(e=>React.createElement("div",{key:e.id,style:{...cs,marginBottom:8}},
+          React.createElement("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:4}},
+            React.createElement("div",{style:{display:"flex",alignItems:"center",gap:6}},
+              React.createElement("span",{style:{fontSize:20}},e.mood),
+              React.createElement("span",{style:{fontSize:12,fontWeight:700,color:"#E8A838"}},e.day),
+              React.createElement("span",{style:{fontSize:10,color:"#7A9B8E"}},e.ts)
+            ),
+            React.createElement("button",{onClick:()=>sJ(journal.filter(j=>j.id!==e.id)),style:{background:"none",border:"none",color:"#7A9B8E",cursor:"pointer"}},"×")
+          ),
+          React.createElement("div",{style:{fontSize:13,lineHeight:1.6,whiteSpace:"pre-wrap"}},e.text)
+        ))
+      )
+    )
+  );
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
