@@ -314,3 +314,27 @@ var ACCOM_PHOTOS = {
   7: "https://cf.bstatic.com/xdata/images/hotel/max1024x768/487706741.jpg",
   8: "https://cf.bstatic.com/xdata/images/hotel/max1024x768/350765893.jpg",
 };
+
+// ─── BELIZE WILDLIFE (Kid personas: Shaan, Reyan, Kamrin) ───
+var BELIZE_WILDLIFE = [
+  {n:"Keel-billed Toucan",   e:"🦜", w:"Jungle — rainbow beak"},
+  {n:"Green Iguana",         e:"🦎", w:"San Ignacio hotel grounds"},
+  {n:"Sea Turtle",           e:"🐢", w:"Moho Caye & reef snorkel"},
+  {n:"Nurse Shark",          e:"🦈", w:"Hol Chan / Shark Ray Alley"},
+  {n:"Stingray",             e:"🐟", w:"Shark Ray Alley"},
+  {n:"Howler Monkey",        e:"🐒", w:"Jungle — heard more than seen!"},
+  {n:"Blue Morpho Butterfly",e:"🦋", w:"Jungle paths"},
+  {n:"Hermit Crab",          e:"🦀", w:"Beaches at Villa 99"},
+  {n:"American Crocodile",   e:"🐊", w:"Rivers & mangroves"},
+  {n:"Roseate Spoonbill",    e:"🦩", w:"Lagoons & marsh edges"},
+  {n:"Boa Constrictor",      e:"🐍", w:"Jungle (rare — lucky spot!)"},
+  {n:"Great Kiskadee",       e:"🐦", w:"Everywhere — loud yellow bird"},
+  {n:"Osprey",               e:"🦅", w:"Coast, diving for fish"},
+  {n:"Angelfish",            e:"🐠", w:"Reef snorkeling"},
+  {n:"Pufferfish",           e:"🐡", w:"Reef snorkeling"},
+  {n:"Dolphin",              e:"🐬", w:"Boat rides — very lucky!"},
+  {n:"Fruit Bat",            e:"🦇", w:"Barton Creek Cave"},
+  {n:"Ocellated Turkey",     e:"🦚", w:"Mayan ruins like Xunantunich"},
+  {n:"Queen Conch",          e:"🐌", w:"Snorkel — shells on the beach"},
+  {n:"Jesus Lizard (Basilisk)",e:"🦎", w:"Riverbanks — runs on water!"},
+];

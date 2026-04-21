@@ -35,7 +35,10 @@ input,select,textarea{font-family:inherit}
 const {useState,useEffect,useRef,useMemo}=React;
 
 // ─── CONSTANTS ───
-const LS_EXP="bz7e", LS_JRN="bz7j";
+const LS_EXP="bz7e", LS_PERSONA="bz7p";
+const LS_JRN_LEGACY="bz7j"; // pre-persona single journal — migrated on first persona pick
+const JRN_KEY=p=>`bz7j:${p}`;
+const WILD_KEY=p=>`bz7w:${p}`;
 const TRIP_START=new Date(2026,3,10);
 const TE={flight:"✈️",transport:"🚐",hotel:"🏨",food:"🍽️",activity:"⭐"};
 const TRANSPORT_ICON={fly:"✈️",boat:"⛵",drive:"🚐"};
@@ -44,6 +47,20 @@ const EXP_CATS=["Accommodation","Flights","Activities","Transport","Food & Drink
 const PAYER_OPTIONS=["CV","DAS","GARK"];
 const PAYER_OPTIONS_WITH_TBD=["CV","DAS","GARK","TBD"];
 const GROUP_FILTERS=["ALL","DAS","GARK","CV"];
+const KID_PERSONAS=new Set(["Shaan","Reyan","Kamrin"]);
+const PERSONA_GROUP={
+  Adam:"DAS", Diya:"DAS", Shaan:"DAS",
+  Amini:"GARK", Gautam:"GARK", Reyan:"GARK", Kamrin:"GARK",
+  CV:"CV",
+};
+// Does an event belong to this persona's lived experience? (ALL always does)
+function eventMatchesPersona(ev,persona){
+  if(!persona) return true;
+  if(ev.group==="ALL") return true;
+  const g=PERSONA_GROUP[persona];
+  if(ev.group==="ALL_NO_CV") return g!=="CV";
+  return ev.group===g;
+}
 
 // ─── HELPERS ───
 const LS={
@@ -67,6 +84,43 @@ function speakKriol(text){
   window.speechSynthesis.speak(u);
 }
 const fmtMoney=(n,d=2)=>"$"+n.toLocaleString("en",{minimumFractionDigits:d,maximumFractionDigits:d});
+
+// ─── PERSONA ───
+function usePersona(){
+  const[persona,setPersonaState]=useState(()=>LS.get(LS_PERSONA));
+  const pick=name=>{
+    // One-time migration: if legacy shared journal exists and this persona has no journal yet, inherit it
+    const legacy=LS.get(LS_JRN_LEGACY);
+    if(legacy && !LS.get(JRN_KEY(name))){
+      LS.set(JRN_KEY(name),legacy);
+      try{localStorage.removeItem(LS_JRN_LEGACY)}catch{}
+    }
+    LS.set(LS_PERSONA,name);
+    setPersonaState(name);
+  };
+  return[persona,pick];
+}
+
+// ─── PER-PERSONA STORAGE HOOKS ───
+function useJournal(persona){
+  const key=JRN_KEY(persona);
+  const[j,setJState]=useState(()=>loadJSON(key,[]));
+  useEffect(()=>{setJState(loadJSON(key,[]))},[key]);
+  const save=next=>{setJState(next); LS.set(key,JSON.stringify(next))};
+  return[j,save];
+}
+function useWildlife(persona){
+  const key=WILD_KEY(persona);
+  const[spotted,setSpottedState]=useState(()=>new Set(loadJSON(key,[])));
+  useEffect(()=>{setSpottedState(new Set(loadJSON(key,[])))},[key]);
+  const toggle=name=>{
+    const next=new Set(spotted);
+    if(next.has(name)) next.delete(name); else next.add(name);
+    setSpottedState(next);
+    LS.set(key,JSON.stringify([...next]));
+  };
+  return[spotted,toggle];
+}
 
 // ─── STYLE TOKENS ───
 const S={
@@ -92,6 +146,39 @@ const InfoLink=({name})=>{
   const url=ACT_LINKS[name]; if(!url) return null;
   return <a href={url} target="_blank" rel="noopener noreferrer" style={{fontSize:10,background:"rgba(123,186,160,.15)",color:"#7BBAA0",padding:"2px 8px",borderRadius:6,textDecoration:"none",fontWeight:600,marginLeft:4}}>Info ↗</a>;
 };
+
+// ─── WELCOME SCREEN & PERSONA CHIP ───
+function PersonaPicker({currentPersona,onPick,onClose}){
+  const members=FAMILIES.flatMap(f=>f.members.map(m=>({...m,group:f.code,color:f.color})));
+  return <div style={{position:"fixed",inset:0,zIndex:10000,background:"rgba(12,34,51,.96)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,overflow:"auto"}}>
+    <div style={{...S.caption,letterSpacing:4,color:"#7BBAA0"}}>Belize 2026</div>
+    <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:700,color:"#F4EDE4",letterSpacing:-1,marginTop:6,marginBottom:4}}>Who's using this?</h1>
+    <div style={{fontSize:12,color:"#9BB8A8",marginBottom:20}}>Tap your face. Saved to this device.</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2, minmax(0, 1fr))",gap:10,width:"100%",maxWidth:360}}>
+      {members.map(m=>{
+        const selected=m.name===currentPersona;
+        return <button key={m.name} onClick={()=>onPick(m.name)} style={{padding:"14px 8px",borderRadius:14,background:selected?m.color+"30":"rgba(255,255,255,.04)",border:`1px solid ${selected?m.color:"rgba(255,255,255,.1)"}`,color:"#E8E4DF",cursor:"pointer",textAlign:"center",fontFamily:"inherit"}}>
+          <div style={{fontSize:36,lineHeight:1}}>{m.icon}</div>
+          <div style={{fontSize:14,fontWeight:700,marginTop:6}}>{m.name}</div>
+          <div style={{fontSize:9,color:m.color,fontWeight:600,marginTop:2,letterSpacing:1}}>{m.group}</div>
+        </button>;
+      })}
+    </div>
+    {onClose && <button onClick={onClose} style={{marginTop:16,background:"none",border:"1px solid rgba(255,255,255,.2)",color:"#9BB8A8",borderRadius:8,padding:"6px 14px",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>}
+  </div>;
+}
+
+function PersonaChip({persona,onChange}){
+  const[open,setOpen]=useState(false);
+  return <>
+    <button onClick={()=>setOpen(true)} style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",color:"#E8E4DF",borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}}>
+      <span style={{fontSize:14}}>{MEMBERS[persona]}</span>
+      <span>Viewing as {persona}</span>
+      <span style={{fontSize:9,opacity:.6}}>▾</span>
+    </button>
+    {open && <PersonaPicker currentPersona={persona} onPick={name=>{onChange(name);setOpen(false)}} onClose={()=>setOpen(false)}/>}
+  </>;
+}
 
 // ─── OFFLINE BAR ───
 function OfflineBar(){
@@ -355,8 +442,8 @@ function TripMap({tripDay,groupFilter="ALL"}){
 }
 
 // ─── ROW COMPONENTS ───
-function EventRow({event:ev}){
-  return <div style={{display:"flex",gap:10,padding:"9px 12px",borderRadius:12,background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.06)",marginBottom:4}}>
+function EventRow({event:ev,dim}){
+  return <div style={{display:"flex",gap:10,padding:"9px 12px",borderRadius:12,background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.06)",marginBottom:4,opacity:dim?.4:1}}>
     <div style={{fontSize:15,width:22,textAlign:"center",flexShrink:0}}>{TE[ev.type]}</div>
     <div style={{flex:1}}>
       <div style={{fontSize:13,lineHeight:1.4}}>
@@ -399,8 +486,34 @@ function PackCard({dayIdx}){
   </div>;
 }
 
+// ─── WILDLIFE CARD (kid personas only) ───
+function WildlifeCard({persona}){
+  const[spotted,toggle]=useWildlife(persona);
+  const total=BELIZE_WILDLIFE.length;
+  return <div style={tintCard("rgba(123,186,160,.08)")}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+      <h3 style={{...S.h3,marginBottom:0}}>🌿 Wildlife Spotter</h3>
+      <div style={{fontSize:12,fontWeight:700,color:"#7BBAA0"}}>{spotted.size} / {total}</div>
+    </div>
+    <div style={{fontSize:11,color:"#9BB8A8",marginBottom:10}}>Tap anything you spotted on the trip!</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2, minmax(0,1fr))",gap:6}}>
+      {BELIZE_WILDLIFE.map(w=>{
+        const on=spotted.has(w.n);
+        return <button key={w.n} onClick={()=>toggle(w.n)} style={{textAlign:"left",padding:"8px 10px",borderRadius:10,background:on?"rgba(232,168,56,.18)":"rgba(255,255,255,.04)",border:`1px solid ${on?"rgba(232,168,56,.5)":"rgba(255,255,255,.08)"}`,color:"#E8E4DF",cursor:"pointer",fontFamily:"inherit",opacity:on?1:.85}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:18}}>{w.e}</span>
+            <span style={{fontSize:12,fontWeight:700,flex:1}}>{w.n}</span>
+            {on && <span style={{fontSize:12,color:"#E8A838"}}>✓</span>}
+          </div>
+          <div style={{fontSize:10,color:"#7A9B8E",marginTop:2,lineHeight:1.3}}>{w.w}</div>
+        </button>;
+      })}
+    </div>
+  </div>;
+}
+
 // ─── TODAY TAB ───
-function TodayTab(){
+function TodayTab({persona}){
   const td=getTD();
   const today = td>=0 && td<DAYS.length ? DAYS[td] : null;
   const tLoc  = td>=0 && td<DLOC.length ? DLOC[td] : null;
@@ -418,6 +531,7 @@ function TodayTab(){
           <div style={{fontSize:14,color:"#9BB8A8"}}>days</div>
         </> : <div style={{fontFamily:"'Playfair Display',serif",fontSize:24}}>Trip Complete!</div>}
       </div>
+      {KID_PERSONAS.has(persona) && <WildlifeCard persona={persona}/>}
     </div>;
   }
 
@@ -460,7 +574,9 @@ function TodayTab(){
     </div>}
 
     <div style={{...S.caption,color:"#7BBAA0",marginBottom:6}}>Schedule</div>
-    {today.events.map((e,i)=><EventRow key={i} event={e}/>)}
+    {today.events.map((e,i)=><EventRow key={i} event={e} dim={!eventMatchesPersona(e,persona)}/>)}
+
+    {KID_PERSONAS.has(persona) && <div style={{marginTop:8}}><WildlifeCard persona={persona}/></div>}
 
     <div style={{...S.card,marginTop:8,background:"rgba(232,168,56,.05)"}}>
       <div style={{...S.caption,color:"#E8A838",marginBottom:4}}>🗣️ Kriol of the Day</div>
@@ -480,7 +596,7 @@ function TodayTab(){
 }
 
 // ─── ITINERARY TAB ───
-function ItineraryTab({sel,setSel,filt,setFilt}){
+function ItineraryTab({sel,setSel,filt,setFilt,persona}){
   const td=getTD();
   const d=DAYS[sel], lk=sel<DLOC.length ? DLOC[sel] : null;
   // Live forecast only makes sense for future trip days. Otherwise show compact current weather.
@@ -490,6 +606,8 @@ function ItineraryTab({sel,setSel,filt,setFilt}){
   const visible=d.events.filter(e=>
     filt==="ALL" || e.group==="ALL" || e.group===filt || (e.group==="ALL_NO_CV" && filt!=="CV")
   );
+  // When filter is ALL, dim events outside the user's persona group; when explicitly filtered, show all visible at full opacity.
+  const dimFor=e => filt==="ALL" && !eventMatchesPersona(e,persona);
 
   return <div className="f">
     <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:8,marginBottom:10}}>
@@ -523,7 +641,7 @@ function ItineraryTab({sel,setSel,filt,setFilt}){
         )}
       </div>
 
-      {visible.map((e,i)=><EventRow key={i} event={e}/>)}
+      {visible.map((e,i)=><EventRow key={i} event={e} dim={dimFor(e)}/>)}
 
       <div style={{...S.card,marginTop:12}}>
         <div style={{...S.caption,color:"#7BBAA0",marginBottom:6}}>🗺️ Day {d.dn} Route</div>
@@ -613,11 +731,6 @@ function ExpensesTab(){
 }
 
 // ─── GUIDE TAB ───
-function useJournal(){
-  const[j,setJState]=useState(()=>loadJSON(LS_JRN,[]));
-  const save=next=>{setJState(next); LS.set(LS_JRN,JSON.stringify(next))};
-  return[j,save];
-}
 function JournalEntry({entry,onDelete}){
   return <div style={{...S.card,marginTop:8,marginBottom:0}}>
     <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
@@ -631,8 +744,8 @@ function JournalEntry({entry,onDelete}){
     <div style={{fontSize:13,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{entry.text}</div>
   </div>;
 }
-function GuideTab(){
-  const[journal,setJournal]=useJournal();
+function GuideTab({persona}){
+  const[journal,setJournal]=useJournal(persona);
   const[jText,setJText]=useState("");
   const[jMood,setJMood]=useState("😊");
 
@@ -764,9 +877,13 @@ function GuideTab(){
 
 // ─── APP ───
 function App(){
+  const[persona,setPersona]=usePersona();
   const[tab,setTab]=useState(0);
   const[sel,setSel]=useState(()=>Math.max(0,getTD()));
   const[filt,setFilt]=useState("ALL");
+
+  // Welcome screen gates the app until persona is chosen.
+  if(!persona) return <PersonaPicker onPick={setPersona}/>;
 
   return <div style={{background:"linear-gradient(160deg,#0C2233 0%,#0A3142 30%,#0E4A3C 70%,#183028 100%)",minHeight:"100vh",color:"#E8E4DF"}}>
     <OfflineBar/>
@@ -783,6 +900,9 @@ function App(){
           </div>
         )}
       </div>
+      <div style={{marginTop:10}}>
+        <PersonaChip persona={persona} onChange={setPersona}/>
+      </div>
     </div>
 
     {/* Tabs */}
@@ -793,10 +913,10 @@ function App(){
     </div>
 
     <div style={{padding:"12px 16px 80px"}}>
-      {tab===0 && <TodayTab/>}
-      {tab===1 && <ItineraryTab sel={sel} setSel={setSel} filt={filt} setFilt={setFilt}/>}
+      {tab===0 && <TodayTab persona={persona}/>}
+      {tab===1 && <ItineraryTab sel={sel} setSel={setSel} filt={filt} setFilt={setFilt} persona={persona}/>}
       {tab===2 && <ExpensesTab/>}
-      {tab===3 && <GuideTab/>}
+      {tab===3 && <GuideTab persona={persona}/>}
     </div>
   </div>;
 }
